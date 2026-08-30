@@ -201,7 +201,15 @@ cd render && npm install
 node export.js --target line --out ../out/line
 ```
 
-That writes one APNG per entry in `sticker-pack.js`, sized and timed to LINE's animated sticker rules, and prints a table of frames, length and file size against the limits.
+That writes one APNG per entry in `sticker-pack.js`, sized and timed to LINE's animated sticker rules, and prints a table of frames, length and file size against the limits. It also writes a `preview.html` contact sheet, so output is checked as files rather than trusted from a table.
+
+There is a second target for LINE's **pop-up stickers**, where the chat shows a still and a separate image plays across the whole chat screen:
+
+```bash
+node export.js --target line-popup --out ../out/line-popup
+```
+
+That full-screen frame is what the dim and halftone wash were built for, so pop-ups render with `env: true` at HEAVY — the intensity that owns the viewport — while the in-chat stills stay transparent and unadorned. Pop-up rules are tighter: 3 seconds rather than 4, and one side must be exactly 480px.
 
 Two details make the output exact. CSS animations are seekable, so a frame is produced by setting `currentTime` and taking a screenshot — output never depends on the machine keeping up. And `seed` fixes the tilt, so re-running gives byte-identical files.
 

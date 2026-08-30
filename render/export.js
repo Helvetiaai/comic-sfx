@@ -34,12 +34,37 @@ const ROOT = path.resolve(HERE, '..');
  */
 const TARGETS = {
   line: {
-    sticker: { w: 320, h: 270, animated: true,  file: null },
-    main:    { w: 240, h: 240, animated: true,  file: 'main.png' },
-    tab:     { w:  96, h:  74, animated: false, file: 'tab.png' },
-    minFrames: 5, maxFrames: 20, maxMs: 4000, maxBytes: 1024 * 1024
+    maxMs: 4000,
+    renders: [
+      { scope: 'each',  w: 320, h: 270, animated: true },
+      { scope: 'cover', w: 240, h: 240, animated: true,  file: 'main.png', label: 'main image' },
+      { scope: 'cover', w:  96, h:  74, animated: false, file: 'tab.png',  label: 'chat thumbnail' }
+    ]
+  },
+
+  /* Pop-up stickers are a separate LINE product: the chat shows a still, and
+     a second image plays across the whole chat screen. That full-screen frame
+     is what the dim and halftone wash were designed for, so these render with
+     env on and at HEAVY — the intensity that owns the viewport.
+     Their rules are tighter than animated stickers: 3 seconds rather than 4,
+     1-3 loops, and one side must be exactly 480. */
+  'line-popup': {
+    maxMs: 3000,
+    renders: [
+      { scope: 'each',  w: 370, h: 320, animated: false, suffix: '' },
+      { scope: 'each',  w: 480, h: 480, animated: true,  suffix: '_popup',
+        env: true, level: 'HEAVY' },
+      { scope: 'cover', w: 240, h: 240, animated: false, file: 'main.png', label: 'main image' },
+      { scope: 'cover', w: 480, h: 480, animated: true,  file: 'main_popup.png',
+        label: 'pop-up main', env: true, level: 'HEAVY' },
+      { scope: 'cover', w:  96, h:  74, animated: false, file: 'tab.png', label: 'chat thumbnail' }
+    ]
   }
 };
+
+for (const t of Object.values(TARGETS)) {
+  t.minFrames = 5; t.maxFrames = 20; t.maxBytes = 1024 * 1024;
+}
 
 const MIME = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
@@ -90,14 +115,14 @@ function framePlan(dur, hold, cap) {
 /* Mount one effect at a given size and report its timeline. `start` is the
    first frame where the word is actually opaque — every entrance begins fully
    transparent, and LINE shows frame one as the still image in its store. */
-async function setup(page, rec, style, seed, w, h) {
-  return page.evaluate(async (rec, style, seed, W, H) => {
+async function setup(page, rec, style, seed, w, h, env) {
+  return page.evaluate(async (rec, style, seed, W, H, env) => {
     const mod = await import('/comic-sfx.js');
     const stage = document.getElementById('stage');
     stage.style.width = W + 'px';
     stage.style.height = H + 'px';
     stage.innerHTML = '';
-    window.__sfx = new mod.ComicSFX(stage, { env: false, seed, style });
+    window.__sfx = new mod.ComicSFX(stage, { env: !!env, seed, style });
     const hit = window.__sfx.fire(rec, {});
 
     const anims = [];
@@ -133,7 +158,7 @@ async function setup(page, rec, style, seed, w, h) {
       if (opacityAt(t) >= 0.85) { start = t; break; }
     }
     return { dur, start };
-  }, rec, style, seed, w, h);
+  }, rec, style, seed, w, h, env);
 }
 
 const seek = (page, t) => page.evaluate((t) => {
@@ -182,20 +207,50 @@ async function main() {
   const results = [];
   try {
     const page = await browser.newPage();
-    await page.setViewport({ width: 480, height: 420, deviceScaleFactor: 1 });
+    await page.setViewport({ width: 560, height: 560, deviceScaleFactor: 1 });
     await page.goto(base + '/render/frame.html', { waitUntil: 'networkidle0' });
     await page.evaluate(() => document.fonts.ready);
 
-    // one animated file per entry, plus the pack's main image
-    const jobs = pack.map(rec => ({ rec, spec: T.sticker, label: rec.word }))
-      .concat([{ rec: cover, spec: T.main, label: 'main image' }]);
+    const slug = (rec) => rec.word.replace(/[^A-Za-z0-9]/g, '') || 'sticker';
+    const jobs = [];
+    for (const spec of T.renders) {
+      const recs = spec.scope === 'each' ? pack : [cover];
+      for (const rec of recs) {
+        jobs.push({
+          rec, spec,
+          label: spec.label || (rec.word + (spec.suffix === '_popup' ? ' pop-up' : '')),
+          file: spec.file || slug(rec) + (spec.suffix || '') + '.png'
+        });
+      }
+    }
 
     for (const job of jobs) {
-      const { rec, spec } = job;
-      const plan = await setup(page, rec, style, seed, spec.w, spec.h);
+      const { spec } = job;
+      /* A still only ever shows the resting frame, but the fit reserves
+         headroom for the entrance overshoot. Rendering stills under a motion
+         that does not overshoot reclaims that room — at 96px wide it is the
+         difference between an icon and a speck. The resting frame is
+         identical either way. */
+      const rec = Object.assign({}, job.rec,
+        spec.animated ? null : { motion: 'buzz' },
+        spec.level ? { level: spec.level } : null);
+
+      const plan = await setup(page, rec, style, seed, spec.w, spec.h, !!spec.env);
       const stage = await page.$('#stage');
 
-      const hold = Math.max(200, Math.min(T.maxMs - plan.dur, 900));
+      if (!spec.animated) {
+        await seek(page, plan.dur);
+        const png = await stage.screenshot({ omitBackground: true, type: 'png' });
+        fs.writeFileSync(path.join(outDir, job.file), png);
+        results.push({
+          label: job.label, file: job.file, size: spec.w + '×' + spec.h,
+          frames: 1, ms: 0, kb: Math.round(png.length / 1024), colours: 'still',
+          ok: png.length <= T.maxBytes
+        });
+        continue;
+      }
+
+      const hold = Math.max(200, Math.min(T.maxMs - plan.dur - 300, 900));
       const times = framePlan(plan.dur, hold, T.maxFrames).filter(t => t >= plan.start);
       if (times[0] !== plan.start) times.unshift(plan.start);
 
@@ -207,34 +262,13 @@ async function main() {
       const total = delays.reduce((a, b) => a + b, 0);
       const enc = encodeAPNG(pngs, spec.w, spec.h, delays, T.maxBytes);
 
-      const name = spec.file || (rec.word.replace(/[^A-Za-z0-9]/g, '') || 'sticker') + '.png';
-      fs.writeFileSync(path.join(outDir, name), enc.buf);
+      fs.writeFileSync(path.join(outDir, job.file), enc.buf);
       results.push({
-        label: job.label, file: name, size: spec.w + '×' + spec.h,
+        label: job.label, file: job.file, size: spec.w + '×' + spec.h,
         frames: times.length, ms: total, kb: Math.round(enc.buf.length / 1024),
         colours: enc.colours,
         ok: enc.buf.length <= T.maxBytes && times.length >= T.minFrames
             && times.length <= T.maxFrames && total <= T.maxMs
-      });
-    }
-
-    /* The chat thumbnail is a still, held at the resting frame. The fit
-       reserves headroom for the entrance overshoot — right for an animation,
-       wasted here, and at 96px wide it leaves the icon swimming in empty
-       space. Rendering it under a motion that does not overshoot reclaims
-       that room; the resting frame is identical either way. */
-    {
-      const spec = T.tab;
-      const still = Object.assign({}, cover, { motion: 'buzz' });
-      const plan = await setup(page, still, style, seed, spec.w, spec.h);
-      const stage = await page.$('#stage');
-      await seek(page, plan.dur);
-      const png = await stage.screenshot({ omitBackground: true, type: 'png' });
-      fs.writeFileSync(path.join(outDir, spec.file), png);
-      results.push({
-        label: 'chat thumbnail', file: spec.file, size: spec.w + '×' + spec.h,
-        frames: 1, ms: 0, kb: Math.round(png.length / 1024), colours: 'still',
-        ok: png.length <= T.maxBytes
       });
     }
   } finally {
@@ -279,7 +313,7 @@ ${cells}
                 pad(r.colours, 10) + (r.ok ? 'yes' : 'NO'));
   }
   const bad = results.filter(r => !r.ok);
-  const stickers = results.filter(r => r.label !== 'main image' && r.label !== 'chat thumbnail').length;
+  const stickers = results.filter(r => !r.file.startsWith('main') && r.file !== 'tab.png' && !r.file.includes('_popup')).length;
   console.log('\n' + stickers + ' stickers + main image + thumbnail written to ' + outDir);
   if (![8, 16, 24].includes(stickers)) {
     console.warn('LINE packs must be 8, 16 or 24 stickers — this pack has ' + stickers + '.');
