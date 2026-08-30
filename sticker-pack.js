@@ -17,8 +17,10 @@ export const PACK_1 = [
   { word: 'OOF!',   says: 'that hurt, cringe',
     dir: 'INK',   motion: 'drop',    level: 'MEDIUM', size: 1.05, shake: 'med' },
 
+  /* six letters, so it renders narrower than the rest at the same size —
+     bumped until it carries the same weight as the bursts */
   { word: 'YIKES!', says: 'awkward',
-    dir: 'INK',   motion: 'squeeze', level: 'MEDIUM', size: 0.95, vibe: true },
+    dir: 'INK',   motion: 'squeeze', level: 'MEDIUM', size: 1.2, vibe: true },
 
   /* the one cold sticker in the set, so the pack is not eight yellows.
      Electric cyan rather than the game's muted teal, which reads as dull

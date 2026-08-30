@@ -131,6 +131,9 @@ Punctuation is part of the word and deliberate. BURST strips it before rendering
 | `shakeTarget` | `null` | element jolted by HEAVY hits, usually the prose container |
 | `exit` | `'SNAP'` | `'SNAP'` cuts out in one frame, `'DRIFT'` fades upward |
 | `zIndex` | `5` | layer z-index |
+| `style` | `'noir'` | which ink to print in — see [Styles](#styles) |
+| `env` | `true` | the dim, halftone wash and screen shake. Set `false` over a transparent background, where they have no panel to sit on |
+| `seed` | `null` | fixes the random tilt, so the same word always renders identically. Leave unset in a game; set it when output has to be reproducible |
 
 The container is given `position: relative` if it is static. The overlay is `pointer-events: none` and `overflow: hidden`, so effects are clipped to the reading area.
 
@@ -188,6 +191,23 @@ Adding a style is one object in `STYLES`. Plates are drawn back to front, where 
 ```
 
 `parts` defaults to splitting the word on spaces. `step` is milliseconds between parts; `dx` and `dy` are the gap and the rise per part, in units of the font size; `scale` is a size multiplier applied per part. Every part is a full glyph, so treatments and flags all work inside a stagger. The hold and exit wait for the last part, and the parts leave together. Under `prefers-reduced-motion` they all arrive at once.
+
+## Exporting to files
+
+`render/` turns effects into animated files — messaging stickers, clips to drop over video. It drives your installed Chrome and steps each effect frame by frame, so nothing is reimplemented and nothing is screen-recorded.
+
+```bash
+cd render && npm install
+node export.js --target line --out ../out/line
+```
+
+That writes one APNG per entry in `sticker-pack.js`, sized and timed to LINE's animated sticker rules, and prints a table of frames, length and file size against the limits.
+
+Two details make the output exact. CSS animations are seekable, so a frame is produced by setting `currentTime` and taking a screenshot — output never depends on the machine keeping up. And `seed` fixes the tilt, so re-running gives byte-identical files.
+
+Frames are spent where the motion is. The entrance gets thirteen and the hold gets five long ones, because APNG carries a delay per frame — which is how twenty frames is enough for something that lands in a third of a second. Sampling starts at the first frame where the word is actually opaque, since LINE shows frame one as the still image in its store.
+
+**This is a development tool and is never shipped.** It has its own `package.json`; the library itself stays dependency-free and nobody installing `comic-sfx` pulls Chrome in.
 
 ## Accessibility
 

@@ -18,6 +18,8 @@ A dependency-free library that renders comic-book sound effects — BLAM!, KABOO
 | `demo.html` | minimal example |
 | `DESIGN.md` | the design spec. Final values, not suggestions |
 | `design/prototype.dc.html` | design history. Never copy from it — it carries three keyframes (`omSlide`, `omCaret`, `omLines`) that never shipped |
+| `sticker-pack.js` | words chosen for what they say in a chat, not for the game |
+| `render/` | the exporter. Node and Chrome, **its own package.json** — the library must stay dependency-free |
 
 ## The three concepts
 
@@ -47,7 +49,8 @@ Intensity is a *disruption* contract, not a size setting. LIGHT must not move an
 2. **Keep the reduced-motion path.** `prefers-reduced-motion: reduce` collapses every entrance to a 90ms pop and drops the shake, wash, `vibe` and `breathe`, while keeping the hold and exit. Several motions are high-amplitude; this is not optional.
 3. **Track every timer** on `this.timers` so `destroy()` can clear it.
 4. **The keyframes and the `CATALOG` shape are the design.** Restructure the code freely; do not quietly retune durations, easings or colours.
-5. **No new runtime dependencies.** That constraint is the point of the library.
+5. **No new runtime dependencies.** That constraint is the point of the library. `render/` is the one place dependencies live, it is a development tool, and nothing in `comic-sfx.js` may import from it.
+6. **Keep `seed` honest.** Anything that consumes randomness must go through the seeded source in `fire()`, or exports stop being reproducible.
 
 ## Verifying a change
 

@@ -1,0 +1,15 @@
+{
+  "name": "comic-sfx-render",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Renders comic-sfx effects to animated files. Development tool only — the library itself has no dependencies and never pulls this in.",
+  "bin": { "comic-sfx-render": "./export.js" },
+  "scripts": {
+    "line": "node export.js --target line --out ../out/line"
+  },
+  "dependencies": {
+    "puppeteer-core": "^23.0.0",
+    "upng-js": "^2.1.0"
+  }
+}

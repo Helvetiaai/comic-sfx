@@ -162,6 +162,26 @@ function el(tag, style, text) {
   return n;
 }
 
+/* Rotation is randomised per fire, which is right in a game and wrong
+   anywhere output has to be reproducible — export the same sticker twice and
+   you would get two different files. Passing a seed swaps the source of
+   randomness for a small deterministic one, keyed by seed and word so each
+   word still gets its own tilt. */
+function hashStr(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function seededRandom(seed) {
+  let a = seed;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function prefersReduced() {
   return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
@@ -478,18 +498,22 @@ export class ComicSFX {
    */
   constructor(container, opts) {
     this.root = container;
-    this.opts = Object.assign({ shakeTarget: null, exit: 'SNAP', zIndex: 5, style: 'noir' }, opts || {});
+    this.opts = Object.assign({ shakeTarget: null, exit: 'SNAP', zIndex: 5,
+                                style: 'noir', env: true, seed: null }, opts || {});
     if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
 
     this.layer = el('div', {
       position: 'absolute', inset: '0', overflow: 'hidden',
       pointerEvents: 'none', zIndex: String(this.opts.zIndex)
     });
-    this.dim = el('div', {
+    /* The dim, wash and screen shake all assume an opaque panel behind the
+       letters. Over a transparent background — a sticker, an OBS overlay —
+       they are wrong, so env:false leaves them out entirely. */
+    this.dim = !this.opts.env ? null : el('div', {
       position: 'absolute', inset: '0', background: 'rgba(11,10,9,.62)',
       opacity: '0', transition: 'opacity 140ms linear'
     });
-    this.layer.appendChild(this.dim);
+    if (this.dim) this.layer.appendChild(this.dim);
     container.appendChild(this.layer);
     this.loud = 0;      // active MEDIUM/HEAVY count, drives the dim
     this.timers = [];
@@ -511,7 +535,9 @@ export class ComicSFX {
     const exit = o.exit || r.exit || this.opts.exit;
     const reduced = prefersReduced();
     const size = Math.round(SIZE[level] * (r.size || 1));
-    const rot = level === 'HEAVY' ? -3 + Math.random() * 6 : -9 + Math.random() * 14;
+    const seed = o.seed != null ? o.seed : (r.seed != null ? r.seed : this.opts.seed);
+    const rnd = seed == null ? Math.random : seededRandom(hashStr(String(seed) + '|' + word));
+    const rot = level === 'HEAVY' ? -3 + rnd() * 6 : -9 + rnd() * 14;
     const dir = o.dir || r.dir || 'INK';
     const st = styleOf(o.style || r.style || this.opts.style);
 
@@ -553,7 +579,7 @@ export class ComicSFX {
     const anchor = level === 'LIGHT' ? (o.anchor || null) : null;
     if (anchor) {
       const s = this.root.getBoundingClientRect(), a = anchor.getBoundingClientRect();
-      pos.left = Math.min(a.left - s.left + a.width * (0.35 + Math.random() * 0.5), s.width - 150) + 'px';
+      pos.left = Math.min(a.left - s.left + a.width * (0.35 + rnd() * 0.5), s.width - 150) + 'px';
       pos.top = (a.top - s.top - 6) + 'px';
       pos.transform = 'translate(-50%,-100%) rotate(' + rot + 'deg)';
     } else if (level === 'HEAVY') {
@@ -594,8 +620,8 @@ export class ComicSFX {
     });
 
     // environment
-    if (level !== 'LIGHT') { this.loud++; this.dim.style.opacity = '1'; }
-    if (level === 'HEAVY' && !reduced) {
+    if (level !== 'LIGHT' && this.dim) { this.loud++; this.dim.style.opacity = '1'; }
+    if (level === 'HEAVY' && !reduced && this.opts.env) {
       const wash = el('div', {
         position: 'absolute', inset: '0', pointerEvents: 'none',
         background: 'radial-gradient(circle at 1.5px 1.5px, ' + COLORS.red + ' 1.5px, transparent 1.8px) 0 0/7px 7px',
@@ -615,7 +641,7 @@ export class ComicSFX {
     const done = function () {
       if (!mount.isConnected) return;
       mount.remove();
-      if (level !== 'LIGHT' && --self.loud <= 0) { self.loud = 0; self.dim.style.opacity = '0'; }
+      if (level !== 'LIGHT' && self.dim && --self.loud <= 0) { self.loud = 0; self.dim.style.opacity = '0'; }
     };
     const timer = setTimeout(done, p.life);
     this.timers.push(timer);
