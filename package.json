@@ -25,6 +25,7 @@
     "typography",
     "no-dependencies"
   ],
+  "author": "Helvetiaai (https://github.com/Helvetiaai)",
   "license": "MIT",
   "homepage": "https://helvetiaai.github.io/comic-sfx/",
   "repository": {
