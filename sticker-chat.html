@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stickers in a conversation</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* A chat mock-up, approximating LINE. Not pixel-accurate to their client —
+   the point is seeing the pack at true phone scale, in context, against a
+   light and a dark chat, rather than as a grid of isolated squares. */
+:root{
+  --bg:#0A0A0A; --panel:#141414; --raise:#1C1C1C;
+  --ink:#F2F2F2; --soft:#B4B4B4; --faint:#949494;
+  --rule:#262626; --rule-hard:#3B3B3B; --red:#F0573A;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:13.5px; line-height:1.65;
+  padding:24px;
+}
+h1{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin:0 0 6px;font-weight:600}
+p.note{font-size:12.5px;color:var(--soft);margin:0 0 20px;max-width:74ch;line-height:1.7}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:22px}
+button{
+  font:inherit;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;
+  background:var(--raise);color:var(--ink);border:1px solid var(--rule-hard);
+  padding:8px 14px;cursor:pointer;
+}
+button:hover{border-color:var(--red);color:var(--red)}
+label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+input[type=range]{accent-color:var(--red);width:150px}
+output{font-size:12px;color:var(--ink);font-variant-numeric:tabular-nums;min-width:52px}
+
+.phones{display:flex;gap:26px;flex-wrap:wrap}
+.phone{
+  width:375px;height:812px;display:flex;flex-direction:column;overflow:hidden;
+  border:1px solid var(--rule-hard);box-shadow:0 18px 44px rgba(0,0,0,.6);
+}
+.phone .cap{
+  font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  padding:7px 12px;background:var(--panel);color:var(--faint);border-bottom:1px solid var(--rule);
+  flex:0 0 auto;
+}
+.top{
+  flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:12px 14px;
+  font-size:14px;font-weight:600;
+}
+.thread{flex:1 1 auto;overflow-y:auto;padding:12px 14px 18px;display:flex;flex-direction:column;gap:9px}
+.entry{display:flex;max-width:82%}
+.entry.out{align-self:flex-end;justify-content:flex-end}
+.bubble{
+  padding:9px 13px;font-size:14px;line-height:1.45;
+  font-family:-apple-system,'Segoe UI',system-ui,sans-serif;
+  border-radius:18px;
+}
+.sticker img{display:block;height:auto}
+.bottom{
+  flex:0 0 auto;padding:11px 14px;font-size:13px;
+  font-family:-apple-system,'Segoe UI',system-ui,sans-serif;
+}
+
+/* light chat */
+.light .top{background:#FFFFFF;color:#111;border-bottom:1px solid #E3E3E6}
+.light .thread{background:#8CA9C5}
+.light .bubble.in{background:#FFFFFF;color:#111}
+.light .bubble.out{background:#8DE055;color:#111}
+.light .bottom{background:#FFFFFF;color:#9A9A9E;border-top:1px solid #E3E3E6}
+
+/* dark chat */
+.dark .top{background:#1B1B1D;color:#F2F2F2;border-bottom:1px solid #2C2C2F}
+.dark .thread{background:#0E0E10}
+.dark .bubble.in{background:#2A2A2E;color:#F2F2F2}
+.dark .bubble.out{background:#2E5B2B;color:#EAF7E6}
+.dark .bottom{background:#1B1B1D;color:#6E6E73;border-top:1px solid #2C2C2F}
+
+.entry{opacity:0;transform:translateY(6px);transition:opacity .18s ease,transform .18s ease}
+.entry.shown{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){ .entry{transition:none} }
+</style>
+</head>
+<body>
+
+<h1>Stickers in a conversation</h1>
+<p class="note">The exported files from <code>out/line</code>, at true phone scale in a chat. This is the test that matters — a sticker that reads in a grid can still be illegible at the size a phone actually draws it. Use the slider: LINE sizes stickers relative to screen width, so check the small end too.</p>
+
+<div class="bar">
+  <button id="play">Play conversation</button>
+  <button id="all">Show all</button>
+  <label for="size">Sticker size</label>
+  <input type="range" id="size" min="110" max="260" step="5" value="180">
+  <output id="sizeOut">180px</output>
+</div>
+
+<div class="phones">
+  <div class="phone light" data-theme="light">
+    <div class="cap">Light chat</div>
+    <div class="top">Group · 4</div>
+    <div class="thread"></div>
+    <div class="bottom">Message</div>
+  </div>
+  <div class="phone dark" data-theme="dark">
+    <div class="cap">Dark chat</div>
+    <div class="top">Group · 4</div>
+    <div class="thread"></div>
+    <div class="bottom">Message</div>
+  </div>
+</div>
+
+<script>
+/* Each sticker used the way its `says` line intends, so the pack is judged as
+   a conversation rather than as eight isolated pictures. */
+const SCRIPT = [
+  { in: 'ok the migration finally ran clean' },
+  { out: 'BOOM' },
+  { in: 'first time all week 😅' },
+  { out: 'did you run it on staging too' },
+  { in: 'ZZZ' },
+  { in: 'i forgot' },
+  { out: 'OOF' },
+  { in: 'it is 2am here be kind' },
+  { out: 'YIKES' },
+  { in: 'anyway i pushed the fix, should be live' },
+  { out: 'ZAP' },
+  { in: 'wait which branch did you push to' },
+  { out: 'HUH' },
+  { in: 'you pushed straight to main' },
+  { out: 'ARGH' },
+  { in: 'reverted. we never speak of this' },
+  { out: 'POW' }
+];
+
+const threads = [...document.querySelectorAll('.thread')];
+let size = 180;
+
+function build(){
+  for (const thread of threads){
+    thread.textContent = '';
+    for (const line of SCRIPT){
+      const side = line.out !== undefined ? 'out' : 'in';
+      const text = line.out !== undefined ? line.out : line.in;
+      const entry = document.createElement('div');
+      entry.className = 'entry ' + side;
+      if (/^[A-Z]+$/.test(text)){
+        entry.classList.add('sticker');
+        const img = document.createElement('img');
+        img.src = 'out/line/' + text + '.png';
+        img.alt = text;
+        img.width = size;
+        entry.appendChild(img);
+      } else {
+        const b = document.createElement('div');
+        b.className = 'bubble ' + side;
+        b.textContent = text;
+        entry.appendChild(b);
+      }
+      thread.appendChild(entry);
+    }
+  }
+}
+
+function showAll(){
+  document.querySelectorAll('.entry').forEach(e => e.classList.add('shown'));
+  threads.forEach(t => t.scrollTop = t.scrollHeight);
+}
+
+let timer = null;
+function play(){
+  clearTimeout(timer);
+  build();
+  const rows = threads.map(t => [...t.children]);
+  let i = 0;
+  (function step(){
+    if (i >= SCRIPT.length) return;
+    rows.forEach(r => r[i].classList.add('shown'));
+    threads.forEach(t => t.scrollTop = t.scrollHeight);
+    const wait = SCRIPT[i].out !== undefined ? 1400 : 900;
+    i++;
+    timer = setTimeout(step, wait);
+  })();
+}
+
+document.getElementById('play').onclick = play;
+document.getElementById('all').onclick = () => { clearTimeout(timer); build(); showAll(); };
+document.getElementById('size').addEventListener('input', e => {
+  size = +e.target.value;
+  document.getElementById('sizeOut').textContent = size + 'px';
+  document.querySelectorAll('.sticker img').forEach(i => i.width = size);
+});
+
+build(); showAll();
+</script>
+</body>
+</html>
