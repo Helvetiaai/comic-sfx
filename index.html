@@ -67,10 +67,13 @@ a{color:var(--red)}
 }
 .brand{
   font-family:'Passion One',Impact,sans-serif; font-weight:900;
-  font-size:25px; line-height:1; letter-spacing:.02em; text-transform:uppercase;
+  font-size:29px; line-height:1; letter-spacing:.02em; text-transform:uppercase;
+  flex:0 0 auto;
 }
 .brand-sub{color:var(--ink-soft);font-size:12px;flex:1 1 220px;min-width:0}
-.topbar-actions{display:flex;gap:8px;margin-left:auto}
+.topbar-actions{display:flex;gap:8px;margin-left:auto;flex:0 0 auto}
+/* below this the subtitle only forces the buttons onto a second row */
+@media (max-width:820px){ .brand-sub{display:none} }
 
 /* ═══ controls ═════════════════════════════════════════════════════════════ */
 .btn{
@@ -112,31 +115,39 @@ a{color:var(--red)}
 .rail-right{border-left:1px solid var(--rule)}
 
 /* ═══ sound index ══════════════════════════════════════════════════════════ */
-.index{padding:20px 14px 14px;display:flex;flex-direction:column;gap:22px;flex:1}
-.group{display:flex;flex-direction:column;gap:7px}
+.index{padding:18px 12px 14px;display:flex;flex-direction:column;gap:20px;flex:1}
+.group{display:flex;flex-direction:column}
+/* the only rule lines in the interface, and they do real work: four groups
+   in one scrolling column need a visible boundary */
+.group > .eyebrow{
+  color:var(--ink-soft); font-weight:600;
+  padding:0 4px 7px; margin-bottom:4px; border-bottom:1px solid var(--rule);
+}
 .group-rows{display:flex;flex-direction:column}
 .sound-row{
   display:flex; align-items:center; justify-content:space-between; gap:10px;
   width:100%; text-align:left; border:0; background:none; cursor:pointer;
-  padding:7px 10px; border-left:2px solid transparent; color:var(--ink);
+  padding:8px 10px; border-left:2px solid transparent; color:var(--ink-soft);
+  transition:color .1s,background .1s;
 }
-.sound-row:hover{background:var(--sel)}
-.sound-row[aria-current="true"]{background:var(--sel);border-left-color:var(--red)}
+.sound-row:hover{background:var(--sel);color:var(--ink)}
+.sound-row[aria-current="true"]{background:var(--sel);border-left-color:var(--red);color:var(--red)}
+/* the index is a list to scan, not a showcase — a display face this small
+   turns to mush on Windows, so the lettering lives where it is large */
 .sound-word{
-  font-family:'Passion One',Impact,sans-serif; font-weight:900;
-  font-size:20px; line-height:1.15; letter-spacing:.01em;
+  font-weight:600; font-size:13px; line-height:1.2; letter-spacing:.07em;
+  text-transform:uppercase;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
-.sound-row[aria-current="true"] .sound-word{color:var(--red)}
 /* intensity reads as bar height, so the list scans without labels */
-.lvl{display:inline-flex;align-items:flex-end;gap:2px;height:11px;flex:0 0 auto}
-.lvl i{width:3px;background:var(--ink-faint);display:block}
+.lvl{display:inline-flex;align-items:flex-end;gap:2px;height:12px;flex:0 0 auto}
+.lvl i{width:3px;background:currentColor;display:block;opacity:.5}
 .lvl i:nth-child(1){height:4px}
-.lvl i:nth-child(2){height:7.5px}
-.lvl i:nth-child(3){height:11px}
-.lvl[data-l="LIGHT"] i:nth-child(n+2){opacity:.25}
-.lvl[data-l="MEDIUM"] i:nth-child(n+3){opacity:.25}
-.sound-row[aria-current="true"] .lvl i{background:var(--red)}
+.lvl i:nth-child(2){height:8px}
+.lvl i:nth-child(3){height:12px}
+.lvl[data-l="LIGHT"] i:nth-child(n+2){opacity:.15}
+.lvl[data-l="MEDIUM"] i:nth-child(n+3){opacity:.15}
+.sound-row[aria-current="true"] .lvl i{opacity:1}
 .index-foot{padding:12px 14px 18px;border-top:1px solid var(--rule)}
 .index-foot .btn{width:100%}
 
@@ -533,7 +544,12 @@ function load(){
   try {
     const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
     if (saved && Array.isArray(saved.catalog) && saved.catalog.length){
-      catalog = saved.catalog;
+      // `group` was added after the first release. A catalog saved before that
+      // has none, which dumps every sound into "Other" and flattens the index.
+      // Backfill it from the shipped catalog by word, leaving edits alone.
+      const shipped = new Map(CATALOG.map(r => [r.word, r.group]));
+      catalog = saved.catalog.map(r =>
+        r.group ? r : { ...r, group: shipped.get(r.word) || 'other' });
       selected = Math.min(Math.max(0, saved.selected | 0), catalog.length - 1);
       if (DEVICES[saved.device]) device = saved.device;
       if (typeof saved.prose === 'string' && saved.prose.trim()) $('gameText').innerHTML = saved.prose;
