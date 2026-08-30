@@ -37,6 +37,8 @@ Intensity is a *disruption* contract, not a size setting. LIGHT must not move an
 
 **Change lettering** — the three `*Glyph()` functions in `comic-sfx.js`. All sizes derive from the effect's font size; there is no spacing scale.
 
+**Stagger** (`stagger` on a catalog entry) renders a word as parts arriving in turn. Two things about it are deliberate. Offsets are margins, not transforms, because margins take part in layout — the cluster then measures and centres correctly and the fit sees its true size, whereas a transform would leave the container reporting one part's box. And the entrance animation goes on each part's own inner element, while the exit is shared so they leave together.
+
 ## Rules
 
 1. **Never duplicate the engine.** The workbench previously inlined its own copy of the catalog and keyframes and it drifted. `index.html` imports from `./comic-sfx.js` and links `./comic-sfx.css`. Keep it that way.

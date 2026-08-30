@@ -299,21 +299,65 @@ function glyph(word, dir, size, r) {
 
 /* ── timing ──────────────────────────────────────────────────────────────── */
 
-function plan(r, level, exit, reduced) {
+/* `extra` is the time the last staggered part waits before it enters. The hold
+   and the exit have to wait for it, or the last part would barely appear. */
+function plan(r, level, exit, reduced, extra) {
+  extra = extra || 0;
   const hold = Math.round(HOLD[level] * (r.hold || 1));
   if (reduced) {
-    return { enter: 'omTick 90ms linear both', dur: 90, hold: hold,
+    return { enter: 'omTick 90ms linear both', dur: 90, hold: hold, extra: 0,
              out: 'omSnap 60ms steps(1) ' + (90 + hold) + 'ms both', life: 150 + hold };
   }
   const m = MOTIONS[r.motion] || MOTIONS.pop;
   const dur = m[3] || Math.round(ENTER[level] * m[1]);
   const enter = m[0] + ' ' + dur + 'ms ' + m[2] + ' both';
-  if (r.motion === 'sweep') return { enter: enter, dur: dur, hold: 0, out: null, life: dur + 40 };
+  if (r.motion === 'sweep') {
+    return { enter: enter, dur: dur, hold: 0, extra: extra, out: null, life: dur + extra + 40 };
+  }
   const out = exit === 'DRIFT'
-    ? 'omDrift 260ms ease-in ' + (dur + hold) + 'ms both'
-    : 'omSnap 60ms steps(1) ' + (dur + hold) + 'ms both';
-  return { enter: enter, dur: dur, hold: hold, out: out,
-           life: dur + hold + (exit === 'DRIFT' ? 270 : 70) };
+    ? 'omDrift 260ms ease-in ' + (dur + extra + hold) + 'ms both'
+    : 'omSnap 60ms steps(1) ' + (dur + extra + hold) + 'ms both';
+  return { enter: enter, dur: dur, hold: hold, extra: extra, out: out,
+           life: dur + extra + hold + (exit === 'DRIFT' ? 270 : 70) };
+}
+
+/* ── stagger ──────────────────────────────────────────────────────────────
+ * Renders a word as several parts that arrive one after another: three Z's
+ * drifting up, PEW PEW landing twice, HA HA HA. Each part is a full glyph, so
+ * every treatment and flag works inside a stagger.
+ *
+ *   stagger: {
+ *     parts: ['Z','Z','Z'],   // defaults to splitting the word on spaces
+ *     step:  170,             // ms between parts
+ *     dx:    0.12,            // gap between parts, in units of font size
+ *     dy:    0.42,            // how much higher each part sits than the last
+ *     scale: 1.16             // size multiplier applied per part
+ *   }
+ *
+ * Offsets are margins rather than transforms on purpose: margins take part in
+ * layout, so the cluster measures and centres correctly and the fit sees its
+ * true size. A transform would leave the container reporting one part's box.
+ */
+function staggerArt(word, dir, size, r) {
+  const s = r.stagger || {};
+  const parts = s.parts || String(word).split(' ');
+  const step = s.dx != null ? s.dx : 0.12;
+  const rise = s.dy != null ? s.dy : 0;
+  const grow = s.scale != null ? s.scale : 1;
+  const wrap = el('div', { display: 'inline-flex', alignItems: 'flex-end', width: 'max-content' });
+  const targets = [];
+  parts.forEach(function (text, i) {
+    const cell = el('div', {
+      marginBottom: Math.round(rise * size * i) + 'px',
+      marginLeft: (i ? Math.round(step * size) : 0) + 'px'
+    });
+    const inner = el('div', { transformOrigin: '50% 50%', width: 'max-content' });
+    inner.appendChild(glyph(text, dir, Math.round(size * Math.pow(grow, i)), r));
+    cell.appendChild(inner);
+    wrap.appendChild(cell);
+    targets.push(inner);
+  });
+  return { art: wrap, targets: targets };
 }
 
 /* ── the overlay ─────────────────────────────────────────────────────────── */
@@ -360,23 +404,38 @@ export class ComicSFX {
     const level = o.level || r.level || 'MEDIUM';
     const exit = o.exit || r.exit || this.opts.exit;
     const reduced = prefersReduced();
-    const p = plan(r, level, exit, reduced);
     const size = Math.round(SIZE[level] * (r.size || 1));
     const rot = level === 'HEAVY' ? -3 + Math.random() * 6 : -9 + Math.random() * 14;
-
-    // innermost: the entrance, wrapped outward by each active modifier
     const dir = o.dir || r.dir || 'INK';
-    // the entrance is attached after measuring: with fill-mode `both` it would
-    // otherwise already be showing its first keyframe (slam starts at 2.7x)
-    let node = el('div', { transformOrigin: '50% 50%', width: 'max-content' });
-    const art = glyph(word, dir, size, r);
-    node.appendChild(art);
+
+    /* innermost: the entrance, wrapped outward by each active modifier.
+       `entrance` is held separately from `node` because wrapIn reassigns node
+       as it wraps — the entrance animation belongs on the inner element, and
+       attaching it to the outermost wrapper reverses how it composes with
+       shake and vibe. */
+    const entrance = el('div', { transformOrigin: '50% 50%', width: 'max-content' });
+    let targets = [entrance];
+    let step = 0;
+    if (r.stagger && !reduced) {
+      const built = staggerArt(word, dir, size, r);
+      entrance.appendChild(built.art);
+      targets = built.targets;
+      step = r.stagger.step != null ? r.stagger.step : 170;
+    } else if (r.stagger) {
+      // reduced motion: the parts still render, they just all arrive at once
+      entrance.appendChild(staggerArt(word, dir, size, r).art);
+    } else {
+      entrance.appendChild(glyph(word, dir, size, r));
+    }
+    const p = plan(r, level, exit, reduced, step * (targets.length - 1));
+    const art = entrance;
+    let node = entrance;
 
     const wrapIn = function (style) {
       style.width = 'max-content';
       const w = el('div', style); w.appendChild(node); node = w;
     };
-    if (r.breathe && !reduced) wrapIn({ animation: 'omBreathe ' + (p.dur + p.hold) + 'ms ease-out both' });
+    if (r.breathe && !reduced) wrapIn({ animation: 'omBreathe ' + (p.dur + p.extra + p.hold) + 'ms ease-out both' });
     if (r.vibe && !reduced) wrapIn({ animation: 'omVibe 90ms steps(2) infinite' });
     if (r.shake && level !== 'LIGHT' && !reduced) {
       wrapIn({ animation: 'omShake ' + (r.shake === 'hard' ? 240 : 180) + 'ms steps(5) ' + Math.round(p.dur * 0.45) + 'ms 1 both' });
@@ -419,7 +478,13 @@ export class ComicSFX {
     mount.style.transform = fit < 1
       ? pos.transform + ' scale(' + fit.toFixed(4) + ')'
       : pos.transform;
-    node.style.animation = p.out ? p.enter + ', ' + p.out : p.enter;
+    /* Start the entrance on the inner element(s). Staggered parts share one
+       exit so they leave together, and each waits its turn to arrive. */
+    targets.forEach(function (t, i) {
+      const d = step * i;
+      const enter = d ? p.enter.replace(/ both$/, ' ' + d + 'ms both') : p.enter;
+      t.style.animation = p.out ? enter + ', ' + p.out : enter;
+    });
 
     // environment
     if (level !== 'LIGHT') { this.loud++; this.dim.style.opacity = '1'; }

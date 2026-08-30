@@ -164,6 +164,17 @@ Builds the lettering as a detached element without animating or mounting it — 
 
 `size` and `hold` multiply the intensity's base size and duration. Flags: `shake` (`'med'` / `'hard'`), `split` (tears the word in half), `vibe` (trembles while on screen), `breathe` (keeps growing through the hold), `flat` (single black shadow instead of the red double), `tint` (overrides the bone fill), `faint` (70% opacity), `exit`.
 
+### Stagger
+
+`stagger` renders a word as several parts that arrive one after another — three Z's drifting up, PEW PEW landing twice, HA HA HA:
+
+```js
+{ word: 'ZZZ…', dir: 'INK', motion: 'muffle',
+  stagger: { parts: ['Z','Z','Z'], step: 190, dx: 0.1, dy: 0.4, scale: 1.18 } }
+```
+
+`parts` defaults to splitting the word on spaces. `step` is milliseconds between parts; `dx` and `dy` are the gap and the rise per part, in units of the font size; `scale` is a size multiplier applied per part. Every part is a full glyph, so treatments and flags all work inside a stagger. The hold and exit wait for the last part, and the parts leave together. Under `prefers-reduced-motion` they all arrive at once.
+
 ## Accessibility
 
 Under `prefers-reduced-motion: reduce` the system collapses every entrance to a 90ms pop and drops the screen shake, the halftone wash, `vibe` and `breathe`. The hold and exit stay, so the words still appear — only the motion is removed. This is built in and several of the motions are high-amplitude, so do not disable it.
