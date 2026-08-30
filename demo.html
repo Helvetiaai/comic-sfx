@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Comic SFX — vanilla demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Passion+One:wght@900&family=Rubik+Mono+One&family=Anton&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="comic-sfx.css">
+<style>
+  body{margin:0;background:#100E0C;color:#C9C2B6;font-family:'IBM Plex Mono',monospace;padding:40px;}
+  #game{position:relative;overflow:hidden;border:2px solid #2A2622;background:#0B0A09;height:420px;max-width:820px;}
+  #text{padding:34px 38px;display:flex;flex-direction:column;gap:14px;font-size:15px;line-height:1.7;}
+  #pad{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px;max-width:820px;}
+  #pad button{border:1px solid #332F2A;background:#0F0D0B;color:#C9C2B6;font:inherit;font-size:11px;padding:9px 12px;cursor:pointer;}
+  #pad button:hover{border-color:#E8482C;color:#F2EDE4;}
+</style>
+</head>
+<body>
+  <div id="game">
+    <div id="text">
+      <p>The dryers are still turning. Nobody has washed anything here in a year.</p>
+      <p>Marek is at the back counting bills into a sports bag, and he has not looked up yet.</p>
+      <p>You can take the bag, or you can take the stairs.</p>
+    </div>
+  </div>
+  <div id="pad"></div>
+
+<script type="module">
+import { ComicSFX, CATALOG } from './comic-sfx.js';
+
+const game = document.getElementById('game');
+const text = document.getElementById('text');
+const sfx = new ComicSFX(game, { shakeTarget: text });
+
+const pad = document.getElementById('pad');
+for (const entry of CATALOG) {
+  const b = document.createElement('button');
+  b.textContent = entry.word;
+  b.title = entry.motion + ' — ' + entry.use;
+  b.onclick = () => sfx.fire(entry.word, {
+    anchor: text.children[Math.floor(Math.random() * text.children.length)]
+  });
+  pad.appendChild(b);
+}
+</script>
+</body>
+</html>

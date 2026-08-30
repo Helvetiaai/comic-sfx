@@ -1,0 +1,32 @@
+{
+  "name": "comic-sfx",
+  "version": "1.0.0",
+  "description": "Vintage comic-book sound effects (BLAM!, KABOOM!, SKREEECH!) for text games. Real text plus CSS keyframes, no dependencies.",
+  "type": "module",
+  "main": "./comic-sfx.js",
+  "exports": {
+    ".": "./comic-sfx.js",
+    "./comic-sfx.css": "./comic-sfx.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "comic-sfx.js",
+    "comic-sfx.css",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "comic",
+    "sound-effects",
+    "onomatopoeia",
+    "text-game",
+    "interactive-fiction",
+    "css-animation",
+    "typography",
+    "no-dependencies"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}

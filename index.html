@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comic SFX Workbench</title>
+<meta name="description" content="Design comic-book sound effects, preview them at real screen sizes, and export the catalog into any game.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%92%A5</text></svg>">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Passion+One:wght@900&family=Rubik+Mono+One&family=Anton&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<!-- the effect keyframes come from the library itself, never a copy -->
+<link rel="stylesheet" href="./comic-sfx.css">
+
+<style>
+/* ═══ tokens ═══════════════════════════════════════════════════════════════
+   Neutral black and grey chrome, single-theme by choice: the workbench is a
+   dark room and the red ink is the only colour in it. Every value is painted
+   explicitly, so the page holds on a light or a dark host ground.
+   Each text tone clears 5:1 against the surface it sits on — measured, not
+   guessed: ink 16.6:1, soft 8.9:1, faint 6.1:1, red 5.4:1 on --panel. */
+:root{
+  --bg:#0A0A0A;        /* page ground */
+  --panel:#141414;     /* rails, bars, sheets */
+  --sunk:#050505;      /* the stage well the device sits in */
+  --raise:#1C1C1C;     /* inputs, chips, cards — one step up from the panel */
+  --ink:#F2F2F2;
+  --ink-soft:#B4B4B4;
+  --ink-faint:#949494;
+  --rule:#262626;
+  --rule-hard:#3B3B3B;
+  --red:#F0573A;
+  --red-deep:#D8442A;
+  --sel:#1F1F1F;
+  --shadow:rgba(0,0,0,.7);
+  --warn-bg:#2A1509;
+  --warn-ink:#F2B08C;
+
+  /* fixed — the game panel is content, not chrome */
+  --game-bg:#0B0A09; --game-edge:#2A2622; --game-ink:#B9B1A5;
+  --bezel:#202020;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:13.5px; line-height:1.65; -webkit-font-smoothing:antialiased;
+  display:flex; flex-direction:column;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+h1,h2,h3,p{margin:0}
+a{color:var(--red)}
+
+/* one label style, used everywhere. No decorative rules. */
+.eyebrow{
+  font-size:10.5px; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--ink-faint); font-weight:500;
+}
+
+/* ═══ top bar ══════════════════════════════════════════════════════════════ */
+.topbar{
+  display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+  padding:13px 22px; border-bottom:1px solid var(--rule); background:var(--panel);
+  flex:0 0 auto;
+}
+.brand{
+  font-family:'Passion One',Impact,sans-serif; font-weight:900;
+  font-size:25px; line-height:1; letter-spacing:.02em; text-transform:uppercase;
+}
+.brand-sub{color:var(--ink-soft);font-size:12px;flex:1 1 220px;min-width:0}
+.topbar-actions{display:flex;gap:8px;margin-left:auto}
+
+/* ═══ controls ═════════════════════════════════════════════════════════════ */
+.btn{
+  border:1px solid var(--rule-hard); background:var(--raise); color:var(--ink);
+  font-size:11.5px; letter-spacing:.05em; text-transform:uppercase;
+  padding:8px 14px; cursor:pointer;
+  transition:border-color .12s,color .12s,background .12s;
+}
+.btn:hover:not(:disabled){border-color:var(--red);color:var(--red)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn-ghost{border-color:var(--rule);color:var(--ink-soft)}
+
+.btn-fire{
+  background:var(--red); color:#FFF6F1; border:1px solid var(--red);
+  font-family:'Passion One',Impact,sans-serif; font-weight:900;
+  font-size:21px; letter-spacing:.06em; text-transform:uppercase;
+  padding:7px 34px 5px; cursor:pointer; line-height:1.2;
+}
+.btn-fire:hover{background:var(--red-deep);border-color:var(--red-deep)}
+.btn-fire:active{transform:translateY(1px)}
+
+.seg{display:flex;border:1px solid var(--rule-hard)}
+.seg .btn{border:0;border-right:1px solid var(--rule-hard)}
+.seg .btn:last-child{border-right:0}
+
+.input{
+  border:1px solid var(--rule-hard); background:var(--raise); color:var(--ink);
+  padding:9px 10px; font-size:12.5px; width:100%;
+}
+
+/* ═══ frame ════════════════════════════════════════════════════════════════ */
+.workbench{
+  flex:1 1 auto; min-height:0;
+  display:grid; grid-template-columns:236px minmax(0,1fr) 348px;
+}
+.rail{background:var(--panel);overflow-y:auto;display:flex;flex-direction:column}
+.rail-left{border-right:1px solid var(--rule)}
+.rail-right{border-left:1px solid var(--rule)}
+
+/* ═══ sound index ══════════════════════════════════════════════════════════ */
+.index{padding:20px 14px 14px;display:flex;flex-direction:column;gap:22px;flex:1}
+.group{display:flex;flex-direction:column;gap:7px}
+.group-rows{display:flex;flex-direction:column}
+.sound-row{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  width:100%; text-align:left; border:0; background:none; cursor:pointer;
+  padding:7px 10px; border-left:2px solid transparent; color:var(--ink);
+}
+.sound-row:hover{background:var(--sel)}
+.sound-row[aria-current="true"]{background:var(--sel);border-left-color:var(--red)}
+.sound-word{
+  font-family:'Passion One',Impact,sans-serif; font-weight:900;
+  font-size:20px; line-height:1.15; letter-spacing:.01em;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.sound-row[aria-current="true"] .sound-word{color:var(--red)}
+/* intensity reads as bar height, so the list scans without labels */
+.lvl{display:inline-flex;align-items:flex-end;gap:2px;height:11px;flex:0 0 auto}
+.lvl i{width:3px;background:var(--ink-faint);display:block}
+.lvl i:nth-child(1){height:4px}
+.lvl i:nth-child(2){height:7.5px}
+.lvl i:nth-child(3){height:11px}
+.lvl[data-l="LIGHT"] i:nth-child(n+2){opacity:.25}
+.lvl[data-l="MEDIUM"] i:nth-child(n+3){opacity:.25}
+.sound-row[aria-current="true"] .lvl i{background:var(--red)}
+.index-foot{padding:12px 14px 18px;border-top:1px solid var(--rule)}
+.index-foot .btn{width:100%}
+
+/* ═══ stage ════════════════════════════════════════════════════════════════ */
+.stage{display:flex;flex-direction:column;min-width:0;background:var(--bg)}
+.stage-bar{
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:12px 22px; border-bottom:1px solid var(--rule);
+}
+.hint{font-size:11px;color:var(--ink-faint)}
+
+.stage-view{
+  flex:1 1 auto; min-height:0; display:grid; place-items:center;
+  overflow:hidden; padding:26px; background:var(--sunk);
+}
+.device-wrap{transform-origin:center center}
+/* the bezel is a grey step lighter than both the well and the screen, so the
+   device still reads as an object once everything around it is black */
+.device{
+  background:var(--bezel); border:1px solid var(--rule-hard); padding:9px;
+  display:flex; flex-direction:column;
+  box-shadow:0 18px 44px var(--shadow), 0 0 0 1px rgba(0,0,0,.6);
+}
+.game{position:relative;overflow:hidden;flex:1;background:var(--game-bg);border:1px solid var(--game-edge)}
+.game-text{
+  padding:26px 28px; display:flex; flex-direction:column; gap:13px;
+  color:var(--game-ink); font-size:14px; line-height:1.75;
+}
+.game-text:focus{outline:1px dashed #4A443C;outline-offset:-2px}
+.game-text p{margin:0}
+
+/* the plain-language readout — the most useful thing on the page */
+.readout{
+  flex:0 0 auto; border-top:1px solid var(--rule); background:var(--panel);
+  padding:16px 22px; display:flex; flex-direction:column; gap:8px;
+}
+.readout p{font-size:14px;line-height:1.62;color:var(--ink);max-width:88ch}
+.readout b{color:var(--red);font-weight:600}
+.facts{
+  display:flex; gap:20px; flex-wrap:wrap;
+  font-size:11.5px; color:var(--ink-faint); font-variant-numeric:tabular-nums;
+}
+.notice{
+  display:flex; gap:9px; align-items:baseline;
+  background:var(--warn-bg); color:var(--warn-ink);
+  font-size:12px; line-height:1.55; padding:9px 12px; max-width:88ch;
+}
+.notice[hidden]{display:none}
+
+/* ═══ inspector ════════════════════════════════════════════════════════════ */
+.inspector{padding:20px 18px 26px;display:flex;flex-direction:column;gap:26px;flex:1}
+.sect{display:flex;flex-direction:column;gap:10px}
+
+.word-input{
+  border:1px solid var(--rule-hard); background:var(--raise); color:var(--ink);
+  padding:9px 12px; width:100%;
+  font-family:'Passion One',Impact,sans-serif; font-weight:900;
+  font-size:28px; line-height:1.2; letter-spacing:.02em;
+}
+.word-input.invalid{border-color:var(--red);color:var(--red)}
+.inline-warn{font-size:12px;color:var(--red);line-height:1.5}
+.inline-warn[hidden]{display:none}
+
+/* pickers — cards that show the thing rather than naming it */
+.picker{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.card{
+  border:1px solid var(--rule-hard); background:var(--raise); cursor:pointer;
+  padding:0; display:flex; flex-direction:column; overflow:hidden; text-align:center;
+  transition:border-color .12s;
+}
+.card:hover{border-color:var(--red)}
+.card[aria-pressed="true"]{border-color:var(--red);border-width:2px}
+.card-art,.card-diag{
+  height:50px; background:var(--game-bg); display:grid; place-items:center; overflow:hidden;
+}
+.card-name{
+  font-size:11px; letter-spacing:.09em; text-transform:uppercase;
+  padding:7px 2px; color:var(--ink-soft); border-top:1px solid var(--rule);
+}
+.card[aria-pressed="true"] .card-name{color:var(--red);font-weight:500}
+
+/* intensity cards carry a footprint diagram, not just a word */
+.card-diag{position:relative;display:block}
+.card-diag i{position:absolute;background:var(--game-ink);opacity:.3;left:8px;right:8px;height:2px}
+.card-diag i:nth-of-type(1){top:12px}
+.card-diag i:nth-of-type(2){top:19px}
+.card-diag i:nth-of-type(3){top:26px;right:20px}
+.card-diag i:nth-of-type(4){top:33px}
+.card-diag::after{content:"";position:absolute;inset:0}
+.card-diag[data-l="MEDIUM"]::after,.card-diag[data-l="HEAVY"]::after{background:rgba(11,10,9,.58)}
+.card-diag b{position:absolute;background:var(--red);display:block;z-index:2}
+.card-diag[data-l="LIGHT"] b{left:11px;top:5px;width:18px;height:6px}
+.card-diag[data-l="MEDIUM"] b{left:14px;right:14px;top:18px;height:13px}
+.card-diag[data-l="HEAVY"] b{left:4px;right:4px;top:6px;bottom:6px}
+
+/* chips carry no border until chosen — fewer boxes on screen */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  border:1px solid transparent; background:var(--raise); color:var(--ink-soft);
+  font-size:11.5px; letter-spacing:.03em;
+  padding:8px 11px; cursor:pointer; transition:color .12s,background .12s;
+}
+.chip:hover{color:var(--red)}
+.chip[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:#FFF6F1}
+
+.desc{font-size:12.5px;line-height:1.6;color:var(--ink-soft);min-height:3.2em}
+
+.slider{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+.slider input[type="range"]{width:100%;accent-color:var(--red)}
+.slider output{
+  font-size:12.5px;color:var(--ink);font-variant-numeric:tabular-nums;
+  min-width:56px;text-align:right;
+}
+.tintrow{display:flex;gap:8px;align-items:center}
+.tintrow input[type="color"]{width:40px;height:36px;padding:0;border:1px solid var(--rule-hard);background:none;cursor:pointer;flex:0 0 auto}
+.tintrow .btn{flex:1}
+.note-input{
+  border:1px solid var(--rule-hard); background:var(--raise); color:var(--ink);
+  padding:9px 10px; font-size:12.5px; line-height:1.6; resize:vertical; min-height:66px; width:100%;
+}
+.inspector-foot{margin-top:auto;padding-top:10px}
+.inspector-foot .btn{width:100%;border-color:var(--rule);color:var(--ink-soft)}
+.inspector-foot .btn:hover:not(:disabled){border-color:var(--red);color:var(--red)}
+
+/* ═══ export ═══════════════════════════════════════════════════════════════ */
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:40;display:grid;place-items:center;padding:26px}
+.sheet[hidden]{display:none}
+.sheet-inner{
+  background:var(--panel); border:1px solid var(--rule-hard);
+  width:min(840px,100%); max-height:100%; display:flex; flex-direction:column;
+  box-shadow:0 24px 60px rgba(0,0,0,.7);
+}
+.sheet-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 20px;border-bottom:1px solid var(--rule)}
+.sheet-head h2{
+  font-family:'Passion One',Impact,sans-serif;font-weight:900;font-size:26px;
+  text-transform:uppercase;letter-spacing:.02em;margin-right:auto;
+}
+.sheet-body{padding:18px 20px 22px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.sheet-body p{font-size:12.5px;line-height:1.7;color:var(--ink-soft);max-width:76ch}
+.sheet-body code{background:var(--raise);color:var(--ink);padding:1px 5px}
+.sheet-body pre{
+  margin:0;overflow:auto;background:var(--game-bg);color:#D2CBBE;
+  border:1px solid var(--game-edge);padding:16px;font-size:12px;line-height:1.7;
+  white-space:pre;max-height:46vh;
+}
+
+/* shown only if the page is opened straight off disk, where ES modules
+   cannot load and the whole tool would otherwise sit there blank */
+.boot-error{
+  margin:auto; max-width:60ch; padding:28px; background:var(--panel);
+  border:1px solid var(--rule-hard); display:flex; flex-direction:column; gap:12px;
+}
+.boot-error h2{font-family:'Passion One',Impact,sans-serif;font-size:28px;text-transform:uppercase}
+.boot-error code{background:var(--raise);padding:2px 6px;display:inline-block}
+.boot-error pre{background:var(--game-bg);border:1px solid var(--game-edge);padding:12px;overflow:auto;font-size:12px;margin:0}
+
+@media (max-width:1240px){ .workbench{grid-template-columns:210px minmax(0,1fr) 310px} }
+@media (max-width:1000px){
+  body{height:auto}
+  .workbench{grid-template-columns:1fr}
+  .rail-left,.rail-right{border:0;border-bottom:1px solid var(--rule)}
+  .rail-left{order:1}.stage{order:2}.rail-right{order:3}
+  .index{flex-direction:row;flex-wrap:wrap;gap:20px}
+  .group{flex:1 1 160px}
+  .stage-view{min-height:56vh}
+}
+@media (prefers-reduced-motion: reduce){
+  .btn,.chip,.card{transition:none}
+  .btn-fire:active{transform:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <h1 class="brand">Comic SFX Workbench</h1>
+  <p class="brand-sub">Design a sound, watch it land at a real screen size, export the catalog.</p>
+  <div class="topbar-actions">
+    <button class="btn" id="btnExport">Export catalog</button>
+    <button class="btn btn-ghost" id="btnReset">Reset all</button>
+  </div>
+</header>
+
+<main class="workbench" id="app">
+
+  <aside class="rail rail-left">
+    <div class="index" id="soundIndex"></div>
+    <div class="index-foot"><button class="btn" id="btnAdd">+ New sound</button></div>
+  </aside>
+
+  <section class="stage">
+    <div class="stage-bar">
+      <div class="seg" role="group" aria-label="Screen size">
+        <button class="btn" data-device="phone">Phone</button>
+        <button class="btn" data-device="tablet">Tablet</button>
+        <button class="btn" data-device="desktop">Desktop</button>
+      </div>
+      <button class="btn-fire" id="btnFire">Fire</button>
+      <span class="hint">or press space</span>
+    </div>
+
+    <div class="stage-view" id="stageView">
+      <div class="device-wrap" id="deviceWrap">
+        <div class="device" id="device">
+          <div class="game" id="game">
+            <div class="game-text" id="gameText" contenteditable="true" spellcheck="false">
+              <p>The dryers are still turning. Nobody has washed anything here in a year.</p>
+              <p>Marek is at the back counting bills into a sports bag, and he has not looked up yet.</p>
+              <p>You can take the bag, or you can take the stairs.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="readout">
+      <p id="readoutText"></p>
+      <div class="facts" id="readoutFacts"></div>
+      <div class="notice" id="clipNotice" hidden><span>▲</span><span id="clipText"></span></div>
+    </div>
+  </section>
+
+  <aside class="rail rail-right">
+    <div class="inspector">
+
+      <div class="sect">
+        <div class="eyebrow">The word</div>
+        <input class="word-input" type="text" id="fWord" autocomplete="off" spellcheck="false" aria-label="Word">
+        <p class="inline-warn" id="wordWarn" hidden></p>
+        <select class="input" id="fGroup" aria-label="Filed under">
+          <option value="impact">Filed under impacts</option>
+          <option value="explosion">Filed under explosions</option>
+          <option value="motion">Filed under movement</option>
+          <option value="mech">Filed under mechanical</option>
+          <option value="other">Filed under other</option>
+        </select>
+      </div>
+
+      <div class="sect">
+        <div class="eyebrow">Lettering</div>
+        <div class="picker" id="dirPicker">
+          <button class="card" data-dir="INK"><span class="card-art" data-art="INK"></span><span class="card-name">Plain</span></button>
+          <button class="card" data-dir="BURST"><span class="card-art" data-art="BURST"></span><span class="card-name">Burst</span></button>
+          <button class="card" data-dir="SHRED"><span class="card-art" data-art="SHRED"></span><span class="card-name">Speed</span></button>
+        </div>
+        <div class="tintrow">
+          <input type="color" id="fTint" aria-label="Letter colour">
+          <button class="btn" id="btnTintClear">Bone white</button>
+        </div>
+      </div>
+
+      <div class="sect">
+        <div class="eyebrow">How much it takes over</div>
+        <div class="picker" id="levelPicker">
+          <button class="card" data-level="LIGHT"><span class="card-diag" data-l="LIGHT"><i></i><i></i><i></i><i></i><b></b></span><span class="card-name">Light</span></button>
+          <button class="card" data-level="MEDIUM"><span class="card-diag" data-l="MEDIUM"><i></i><i></i><i></i><i></i><b></b></span><span class="card-name">Medium</span></button>
+          <button class="card" data-level="HEAVY"><span class="card-diag" data-l="HEAVY"><i></i><i></i><i></i><i></i><b></b></span><span class="card-name">Heavy</span></button>
+        </div>
+        <p class="desc" id="levelDesc"></p>
+      </div>
+
+      <div class="sect">
+        <div class="eyebrow">How it arrives</div>
+        <select class="input" id="fMotion" aria-label="How it arrives"></select>
+        <p class="desc" id="motionDesc"></p>
+      </div>
+
+      <div class="sect">
+        <div class="eyebrow">Size on screen</div>
+        <div class="slider"><input type="range" id="fSize" min="0.4" max="2" step="0.05" aria-label="Size on screen"><output id="oSize"></output></div>
+        <div class="eyebrow">Time on screen</div>
+        <div class="slider"><input type="range" id="fHold" min="0.4" max="2.5" step="0.05" aria-label="Time on screen"><output id="oHold"></output></div>
+        <select class="input" id="fShake" aria-label="Jolt on impact">
+          <option value="">No jolt</option>
+          <option value="med">Jolts the word</option>
+          <option value="hard">Jolts hard, shakes the prose</option>
+        </select>
+        <select class="input" id="fExit" aria-label="How it leaves">
+          <option value="SNAP">Cuts out in one frame</option>
+          <option value="DRIFT">Fades upward</option>
+        </select>
+      </div>
+
+      <div class="sect">
+        <div class="eyebrow">Extras</div>
+        <div class="chips" id="flagPicker">
+          <button class="chip" data-flag="split">Tear in half</button>
+          <button class="chip" data-flag="vibe">Tremble</button>
+          <button class="chip" data-flag="breathe">Keep growing</button>
+          <button class="chip" data-flag="flat">Flat shadow</button>
+          <button class="chip" data-flag="faint">Faint</button>
+        </div>
+      </div>
+
+      <div class="sect">
+        <div class="eyebrow">Note for the writers</div>
+        <textarea class="note-input" id="fUse" spellcheck="true" aria-label="Note for the writers"></textarea>
+      </div>
+
+      <div class="inspector-foot">
+        <button class="btn" id="btnDelete">Delete this sound</button>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<div class="sheet" id="exportSheet" hidden>
+  <div class="sheet-inner" role="dialog" aria-modal="true" aria-label="Export catalog">
+    <div class="sheet-head">
+      <h2>Catalog</h2>
+      <button class="btn" id="btnCopy">Copy</button>
+      <button class="btn btn-ghost" id="btnCloseExport">Close</button>
+    </div>
+    <div class="sheet-body">
+      <p>Paste this over the <code>CATALOG</code> array in <code>comic-sfx.js</code>. Nothing else in the library changes. Ship <code>comic-sfx.js</code>, <code>comic-sfx.css</code> and the three fonts (Passion One, Rubik Mono One, Anton) with your game — self-host the fonts rather than linking Google, or the lettering falls back for a player with a blocked connection.</p>
+      <pre id="exportOut"></pre>
+    </div>
+  </div>
+</div>
+
+<div id="sfxLive" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap"></div>
+
+<script type="module">
+import {
+  ComicSFX, CATALOG, SIZE, HOLD, ENTER, MOTIONS, renderGlyph
+} from './comic-sfx.js';
+
+/* ═══ plain-language copy ═══════════════════════════════════════════════════
+   The library speaks in motion keys and intensity levels. Everything below
+   turns those into sentences a writer can act on. This is workbench-only
+   vocabulary and deliberately does not live in the library.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const MOTION_NAME = {
+  crack:'Crack', slam:'Slam', drop:'Drop', sweep:'Sweep', stretch:'Stretch',
+  squeeze:'Squeeze', tick:'Tick', buzz:'Buzz', muffle:'Muffle', pop:'Pop'
+};
+const MOTION_SHORT = {
+  crack:'arrives at full size', slam:'oversize, then settles', drop:'falls and squashes',
+  sweep:'passes through', stretch:'stretched out of nothing', squeeze:'compressed, strains open',
+  tick:'small precise pop', buzz:'electric jitter', muffle:'rises from below', pop:'plain overshoot'
+};
+const MOTION_DESC = {
+  crack:'Arrives already at full size with no wind-up. Gunshots, breaks — a bang has no anticipation.',
+  slam:'Comes in huge and blurred, drops onto the page, settles. Punches and explosions.',
+  drop:'Falls from above, squashes wide on landing, settles. Weight hitting a floor.',
+  sweep:'Passes straight through the frame and leaves. No hold, no exit — it never stops.',
+  stretch:'Pulled out of nothing sideways. Tyres, brakes, dragged metal.',
+  squeeze:'Starts compressed flat, then strains open. Effort rather than impact.',
+  tick:'A small precise pop. Locks, catches, short wet sounds.',
+  buzz:'Six-frame electric jitter. Phones on metal, strip lights, gate buzzers.',
+  muffle:'Rises from below and never reaches full opacity. Something happening elsewhere.',
+  pop:'A plain overshoot. The safe choice when nothing else fits.'
+};
+const MOTION_PHRASE = {
+  crack:'snaps in already at full size', slam:'slams in oversize and settles',
+  drop:'falls in, squashes wide and settles', sweep:'sweeps straight through the frame and leaves',
+  stretch:'stretches out of nothing', squeeze:'starts compressed, then strains open',
+  tick:'pops in small and precise', buzz:'jitters in, electric',
+  muffle:'rises from below at half opacity', pop:'pops in with an overshoot'
+};
+const LEVEL_DESC = {
+  LIGHT:'Sits next to the line that caused it. Nothing else on screen moves — safe to use often.',
+  MEDIUM:'Takes the middle of the panel and dims the prose behind it. A few times a scene.',
+  HEAVY:'Fills the screen with a halftone blowout and shakes the prose. Two or three times a chapter at most, or it stops meaning anything.'
+};
+const LEVEL_PHRASE = {
+  LIGHT:'It sits by the line that caused it and disturbs nothing else.',
+  MEDIUM:'It takes the middle of the panel and dims the prose behind it.',
+  HEAVY:'It fills the screen — halftone wash, nothing else legible.'
+};
+const GROUP_LABEL = { impact:'Impacts', explosion:'Explosions', motion:'Movement', mech:'Mechanical', other:'Other' };
+const GROUP_ORDER = ['impact','explosion','motion','mech','other'];
+
+/* ═══ state ════════════════════════════════════════════════════════════════ */
+
+const STORE = 'comic-sfx-workbench-v1';
+const DEVICES = {
+  phone:   { label:'Phone',   w:375,  h:720 },
+  tablet:  { label:'Tablet',  w:768,  h:900 },
+  desktop: { label:'Desktop', w:1280, h:720 }
+};
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+};
+
+let catalog, selected = 0, device = 'phone';
+
+function load(){
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+    if (saved && Array.isArray(saved.catalog) && saved.catalog.length){
+      catalog = saved.catalog;
+      selected = Math.min(Math.max(0, saved.selected | 0), catalog.length - 1);
+      if (DEVICES[saved.device]) device = saved.device;
+      if (typeof saved.prose === 'string' && saved.prose.trim()) $('gameText').innerHTML = saved.prose;
+      return;
+    }
+  } catch (e) { /* blocked or corrupt storage — fall through to the defaults */ }
+  catalog = structuredClone(CATALOG);
+}
+function save(){
+  try {
+    localStorage.setItem(STORE, JSON.stringify({ catalog, selected, device, prose:$('gameText').innerHTML }));
+  } catch (e) { /* private window — editing still works, export is the real save */ }
+}
+const current = () => catalog[selected];
+
+/* how long the effect is alive, using the library's own timing constants */
+function timing(r){
+  const level = r.level || 'MEDIUM';
+  const m = MOTIONS[r.motion] || MOTIONS.pop;
+  const dur = m[3] || Math.round(ENTER[level] * m[1]);
+  const hold = r.motion === 'sweep' ? 0 : Math.round(HOLD[level] * (r.hold || 1));
+  return { dur, hold };
+}
+
+/* ═══ left rail: grouped index ═════════════════════════════════════════════ */
+
+function renderIndex(){
+  const host = $('soundIndex');
+  host.textContent = '';
+  const buckets = new Map();
+  catalog.forEach((r, i) => {
+    const g = GROUP_LABEL[r.group] ? r.group : 'other';
+    if (!buckets.has(g)) buckets.set(g, []);
+    buckets.get(g).push(i);
+  });
+  for (const g of GROUP_ORDER){
+    if (!buckets.has(g)) continue;
+    const sect = el('div', 'group');
+    const rows = el('div', 'group-rows');
+    for (const i of buckets.get(g)){
+      const r = catalog[i];
+      const b = el('button', 'sound-row');
+      b.type = 'button';
+      b.setAttribute('aria-current', String(i === selected));
+      const lvl = el('span', 'lvl');
+      lvl.dataset.l = r.level || 'MEDIUM';
+      lvl.title = (r.level || 'MEDIUM').toLowerCase() + ' intensity';
+      lvl.append(el('i'), el('i'), el('i'));
+      b.append(el('span', 'sound-word', r.word || '—'), lvl);
+      b.onclick = () => { selected = i; renderIndex(); renderInspector(); save(); fire(); };
+      rows.appendChild(b);
+    }
+    sect.append(el('div', 'eyebrow', GROUP_LABEL[g]), rows);
+    host.appendChild(sect);
+  }
+}
+
+/* ═══ treatment cards show the actual word, scaled to fit ══════════════════ */
+
+function renderDirArt(){
+  const r = current();
+  const word = (r.word || 'BLAM!').slice(0, 12);
+  for (const slot of document.querySelectorAll('[data-art]')){
+    slot.textContent = '';
+    const holder = el('div');
+    holder.style.cssText = 'display:grid;place-items:center;transform-origin:center';
+    holder.appendChild(renderGlyph(word, slot.dataset.art, 26, { tint:r.tint, flat:r.flat }));
+    slot.appendChild(holder);
+    requestAnimationFrame(() => {
+      const box = slot.getBoundingClientRect(), art = holder.getBoundingClientRect();
+      if (!art.width || !art.height) return;
+      const s = Math.min(1, (box.width - 8) / art.width, (box.height - 8) / art.height);
+      holder.style.transform = 'scale(' + s + ')';
+    });
+  }
+}
+
+/* ═══ plain-language readout ═══════════════════════════════════════════════ */
+
+function sentence(r){
+  const level = r.level || 'MEDIUM';
+  const word = r.word || 'It';
+  const extras = [];
+  if (r.shake === 'hard') extras.push('jolts hard');
+  else if (r.shake === 'med') extras.push('jolts');
+  if (r.split) extras.push('tears in half');
+  if (r.vibe) extras.push('trembles the whole time');
+  if (r.breathe) extras.push('keeps growing while it holds');
+  const move = MOTION_PHRASE[r.motion] || MOTION_PHRASE.pop;
+  const tail = extras.length ? ' and ' + extras.join(', ') : '';
+
+  if (r.motion === 'sweep')
+    return [word, ` ${move}${tail}. It never holds and never exits — the pass-through is the whole effect.`];
+
+  let rest = ` ${move}${tail}. ${LEVEL_PHRASE[level]}`;
+  if (level === 'HEAVY' && r.shake === 'hard') rest += ' The prose shakes with it.';
+  rest += r.exit === 'DRIFT' ? ' It fades upward as it goes.' : ' Then it cuts out in one frame.';
+  return [word, rest];
+}
+
+function renderReadout(){
+  const r = current();
+  const [word, rest] = sentence(r);
+  const p = $('readoutText');
+  p.textContent = '';
+  p.append(el('b', null, word), document.createTextNode(rest));
+
+  const level = r.level || 'MEDIUM';
+  const px = Math.round(SIZE[level] * (r.size ?? 1));
+  const t = timing(r);
+  const f = $('readoutFacts');
+  f.textContent = '';
+  f.append(
+    el('span', null, px + 'px tall'),
+    el('span', null, r.motion === 'sweep'
+      ? (t.dur / 1000).toFixed(2) + 's pass-through'
+      : ((t.dur + t.hold) / 1000).toFixed(2) + 's on screen')
+  );
+
+  // honest warning: sizes are fixed pixels, so a big word clips on a small screen
+  const w = DEVICES[device].w;
+  const est = px * Math.max(2.2, (r.word || '').length * 0.62);
+  const notice = $('clipNotice');
+  if (est > w - 30){
+    $('clipText').textContent =
+      `At ${w}px wide this runs past both edges. Sizes are fixed pixels, so the same word is fine on desktop and clipped on a phone — worth deciding before the game ships on mobile.`;
+    notice.hidden = false;
+  } else notice.hidden = true;
+}
+
+/* ═══ inspector ════════════════════════════════════════════════════════════ */
+
+function renderInspector(){
+  const r = current();
+  $('fWord').value = r.word || '';
+  $('fGroup').value = GROUP_LABEL[r.group] ? r.group : 'other';
+  $('fMotion').value = MOTIONS[r.motion] ? r.motion : 'pop';
+  $('fShake').value = r.shake || '';
+  $('fExit').value = r.exit || 'SNAP';
+  $('fTint').value = r.tint || '#F4EFE6';
+  $('fUse').value = r.use || '';
+
+  const level = r.level || 'MEDIUM';
+  $('fSize').value = r.size ?? 1;
+  $('oSize').textContent = Math.round(SIZE[level] * (r.size ?? 1)) + 'px';
+  $('fHold').value = r.hold ?? 1;
+  $('oHold').textContent = (Math.round(HOLD[level] * (r.hold ?? 1)) / 1000).toFixed(2) + 's';
+
+  document.querySelectorAll('#dirPicker .card').forEach(c =>
+    c.setAttribute('aria-pressed', String(c.dataset.dir === (r.dir || 'INK'))));
+  document.querySelectorAll('#levelPicker .card').forEach(c =>
+    c.setAttribute('aria-pressed', String(c.dataset.level === level)));
+  document.querySelectorAll('#flagPicker .chip').forEach(c =>
+    c.setAttribute('aria-pressed', String(!!r[c.dataset.flag])));
+
+  $('levelDesc').textContent = LEVEL_DESC[level];
+  $('motionDesc').textContent = MOTION_DESC[r.motion] || MOTION_DESC.pop;
+  $('btnDelete').disabled = catalog.length <= 1;
+
+  // a duplicate or empty word breaks the lookup in the library — say so
+  const word = (r.word || '').trim();
+  const dup = word && catalog.some((o, i) => i !== selected && (o.word || '').trim() === word);
+  const warn = $('wordWarn');
+  $('fWord').classList.toggle('invalid', !word || !!dup);
+  if (!word){ warn.textContent = 'Give it a word — the game calls each sound by its text.'; warn.hidden = false; }
+  else if (dup){ warn.textContent = 'Another sound already uses this word. The game would only ever fire the first one.'; warn.hidden = false; }
+  else warn.hidden = true;
+
+  renderDirArt();
+  renderReadout();
+}
+
+function patch(key, value, refire){
+  const r = current();
+  if (value === '' || value === undefined || value === null || value === false) delete r[key];
+  else r[key] = value;
+  renderIndex(); renderInspector(); save();
+  if (refire) fire();
+}
+
+/* ═══ stage ════════════════════════════════════════════════════════════════ */
+
+const gameText = $('gameText');
+const sfx = new ComicSFX($('game'), { shakeTarget: gameText });
+
+function layout(){
+  const d = DEVICES[device];
+  const dev = $('device');
+  dev.style.width = d.w + 'px';
+  dev.style.height = d.h + 'px';
+  document.querySelectorAll('[data-device]').forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset.device === device)));
+  const view = $('stageView');
+  const s = Math.min(1, (view.clientWidth - 52) / d.w, (view.clientHeight - 52) / d.h);
+  $('deviceWrap').style.transform = 'scale(' + (s > 0 ? s : 1) + ')';
+}
+
+function fire(){
+  const r = current();
+  const lines = gameText.querySelectorAll('p');
+  const anchor = (r.level || 'MEDIUM') === 'LIGHT' && lines.length
+    ? lines[Math.floor(Math.random() * lines.length)] : null;
+  sfx.fire(r, { anchor });          // the library takes the live record directly
+  $('sfxLive').textContent = r.word || '';
+}
+
+/* ═══ wiring ═══════════════════════════════════════════════════════════════ */
+
+const motionSel = $('fMotion');
+for (const [k, name] of Object.entries(MOTION_NAME)){
+  const o = document.createElement('option');
+  o.value = k;
+  o.textContent = name + ' — ' + MOTION_SHORT[k];
+  motionSel.appendChild(o);
+}
+
+$('fWord').addEventListener('input', e => patch('word', e.target.value));
+$('fGroup').addEventListener('change', e => patch('group', e.target.value));
+$('fMotion').addEventListener('change', e => patch('motion', e.target.value, true));
+$('fShake').addEventListener('change', e => patch('shake', e.target.value, true));
+$('fExit').addEventListener('change', e => patch('exit', e.target.value, true));
+$('fUse').addEventListener('input', e => patch('use', e.target.value));
+$('fTint').addEventListener('input', e => patch('tint', e.target.value, true));
+$('btnTintClear').addEventListener('click', () => patch('tint', '', true));
+
+document.querySelectorAll('#dirPicker .card').forEach(c =>
+  c.addEventListener('click', () => patch('dir', c.dataset.dir, true)));
+document.querySelectorAll('#levelPicker .card').forEach(c =>
+  c.addEventListener('click', () => patch('level', c.dataset.level, true)));
+document.querySelectorAll('#flagPicker .chip').forEach(c =>
+  c.addEventListener('click', () => patch(c.dataset.flag, current()[c.dataset.flag] ? '' : true, true)));
+
+$('fSize').addEventListener('input', e => {
+  current().size = Number(e.target.value);
+  $('oSize').textContent = Math.round(SIZE[current().level || 'MEDIUM'] * Number(e.target.value)) + 'px';
+  renderReadout(); save();
+});
+$('fSize').addEventListener('change', fire);
+$('fHold').addEventListener('input', e => {
+  current().hold = Number(e.target.value);
+  $('oHold').textContent = (Math.round(HOLD[current().level || 'MEDIUM'] * Number(e.target.value)) / 1000).toFixed(2) + 's';
+  renderReadout(); save();
+});
+$('fHold').addEventListener('change', fire);
+
+document.querySelectorAll('[data-device]').forEach(b =>
+  b.addEventListener('click', () => { device = b.dataset.device; layout(); renderReadout(); save(); }));
+
+$('btnFire').addEventListener('click', fire);
+
+$('btnAdd').addEventListener('click', () => {
+  catalog.push({ word:'NEW!', group:current().group || 'impact', level:'MEDIUM', dir:'INK', motion:'pop', size:1 });
+  selected = catalog.length - 1;
+  renderIndex(); renderInspector(); save();
+  $('fWord').focus(); $('fWord').select();
+});
+$('btnDelete').addEventListener('click', () => {
+  if (catalog.length <= 1) return;
+  catalog.splice(selected, 1);
+  selected = Math.max(0, selected - 1);
+  renderIndex(); renderInspector(); save();
+});
+$('btnReset').addEventListener('click', () => {
+  if (!confirm('Reset every sound back to the original fourteen? Your edits will be lost.')) return;
+  catalog = structuredClone(CATALOG);
+  selected = 0;
+  renderIndex(); renderInspector(); save();
+});
+
+/* ═══ export ═══════════════════════════════════════════════════════════════ */
+
+const KEY_ORDER = ['word','group','level','dir','motion','size','hold','shake','flat','tint','faint','split','vibe','breathe','exit'];
+function serialize(){
+  const body = catalog.map(r => {
+    const parts = [];
+    for (const k of KEY_ORDER){
+      const v = r[k];
+      if (v === undefined || v === '' || v === false) continue;
+      if ((k === 'size' || k === 'hold') && Number(v) === 1) continue;
+      parts.push(k + ': ' + (typeof v === 'string'
+        ? "'" + v.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/…/g, '\\u2026') + "'"
+        : v));
+    }
+    let out = '  { ' + parts.join(', ');
+    out += r.use ? ',\n    use: ' + JSON.stringify(r.use) + ' }' : ' }';
+    return out;
+  }).join(',\n');
+  return '/* Generated by the Comic SFX Workbench.\n'
+       + ' * Paste over the CATALOG array in comic-sfx.js. Nothing else changes.\n */\n'
+       + 'export const CATALOG = [\n' + body + '\n];\n';
+}
+function openSheet(){ $('exportOut').textContent = serialize(); $('exportSheet').hidden = false; $('btnCloseExport').focus(); }
+function closeSheet(){ $('exportSheet').hidden = true; $('btnExport').focus(); }
+$('btnExport').addEventListener('click', openSheet);
+$('btnCloseExport').addEventListener('click', closeSheet);
+$('exportSheet').addEventListener('click', e => { if (e.target === $('exportSheet')) closeSheet(); });
+$('btnCopy').addEventListener('click', async (e) => {
+  const b = e.currentTarget;
+  try { await navigator.clipboard.writeText(serialize()); b.textContent = 'Copied'; }
+  catch (err) { b.textContent = 'Select the text below'; }
+  setTimeout(() => { b.textContent = 'Copy'; }, 1600);
+});
+
+gameText.addEventListener('input', save);
+window.addEventListener('resize', layout);
+
+/* keyboard: space fires, arrows walk the list — never while typing */
+document.addEventListener('keydown', e => {
+  const t = e.target;
+  if (t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+  if (!$('exportSheet').hidden){ if (e.key === 'Escape') closeSheet(); return; }
+  if (e.code === 'Space'){ e.preventDefault(); fire(); }
+  else if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    e.preventDefault();
+    selected = (selected + (e.key === 'ArrowDown' ? 1 : catalog.length - 1)) % catalog.length;
+    renderIndex(); renderInspector(); save(); fire();
+  }
+});
+
+load();
+renderIndex();
+renderInspector();
+layout();
+requestAnimationFrame(() => { layout(); renderDirArt(); fire(); });
+</script>
+
+<script>
+/* Opened straight off disk? ES modules are blocked on file:// and the tool
+   would just sit there blank. Say what happened and how to fix it. */
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    if (document.getElementById('soundIndex').children.length) return;
+    const app = document.getElementById('app');
+    app.className = 'boot-error';
+    app.innerHTML =
+      '<h2>Needs a local server</h2>' +
+      '<p>The workbench loads <code>comic-sfx.js</code> as an ES module, and browsers block ' +
+      'module loading over <code>file://</code>. Run any static server from this folder and ' +
+      'open the address it prints:</p>' +
+      '<pre>npx serve .</pre>' +
+      '<p>Or push the repository to GitHub and turn on Pages — the workbench is the site\u2019s home page.</p>';
+  }, 700);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.cache/
+
+# editor / OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# logs
+*.log
+npm-debug.log*

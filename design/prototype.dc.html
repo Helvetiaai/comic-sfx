@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Passion+One:wght@700;900&family=Rubik+Mono+One&family=Anton&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#100E0C;}
+  *{box-sizing:border-box;}
+  a{color:#E8482C;text-decoration:none;border-bottom:1px solid rgba(232,72,44,.4);}
+  a:hover{color:#F2EDE4;border-bottom-color:#F2EDE4;}
+  button{font-family:inherit;cursor:pointer;}
+  @keyframes omPop{0%{transform:scale(.34);opacity:0}58%{transform:scale(1.15);opacity:1}80%{transform:scale(.97)}100%{transform:scale(1);opacity:1}}
+  @keyframes omSlam{0%{transform:scale(2.7);opacity:0;filter:blur(10px)}42%{transform:scale(.88);opacity:1;filter:blur(0)}68%{transform:scale(1.07)}100%{transform:scale(1)}}
+  @keyframes omSlide{0%{transform:translateX(-150%) skewX(-30deg);opacity:0}70%{transform:translateX(6%) skewX(-6deg);opacity:1}100%{transform:translateX(0) skewX(0);opacity:1}}
+  @keyframes omTick{0%{transform:scale(.55);opacity:0}55%{transform:scale(1.08);opacity:1}100%{transform:scale(1);opacity:1}}
+  @keyframes omBuzz{0%{transform:translate(0,0);opacity:0}12%{opacity:1}20%{transform:translate(2px,-1px)}40%{transform:translate(-2px,1px);opacity:.65}60%{transform:translate(1px,2px);opacity:1}80%{transform:translate(-1px,-2px);opacity:.8}100%{transform:translate(0,0);opacity:1}}
+  @keyframes omShake{0%{transform:translate(0,0) rotate(0)}20%{transform:translate(-6px,3px) rotate(-1.2deg)}40%{transform:translate(5px,-4px) rotate(1deg)}60%{transform:translate(-4px,-2px) rotate(-.6deg)}80%{transform:translate(3px,3px) rotate(.5deg)}100%{transform:translate(0,0) rotate(0)}}
+  @keyframes omDrift{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-22px) scale(1.06)}}
+  @keyframes omSnap{0%{opacity:1}99%{opacity:1}100%{opacity:0}}
+  @keyframes omStage{0%{transform:translate(0,0)}15%{transform:translate(-14px,7px)}30%{transform:translate(11px,-9px)}45%{transform:translate(-8px,-5px)}60%{transform:translate(7px,6px)}78%{transform:translate(-3px,2px)}100%{transform:translate(0,0)}}
+  @keyframes omWash{0%{opacity:0}8%{opacity:.85}100%{opacity:0}}
+  @keyframes omLines{0%{transform:translateX(-14%) scaleX(1.2);opacity:0}30%{opacity:.75}100%{transform:translateX(4%) scaleX(1);opacity:0}}
+  @keyframes omCaret{0%,49%{opacity:1}50%,100%{opacity:0}}
+  @keyframes omCrack{0%{transform:scale(1.4);opacity:0}5%{opacity:1}28%{transform:scale(.93)}55%{transform:scale(1.05)}100%{transform:scale(1)}}
+  @keyframes omDrop{0%{transform:translateY(-70%) scale(.9,1.25);opacity:0}40%{opacity:1}68%{transform:translateY(0) scale(1.14,.8)}86%{transform:translateY(0) scale(.97,1.06)}100%{transform:translateY(0) scale(1,1)}}
+  @keyframes omSweep{0%{transform:translateX(-165%) skewX(-32deg);opacity:0}22%{opacity:1}68%{opacity:1}100%{transform:translateX(165%) skewX(-32deg);opacity:0}}
+  @keyframes omStretch{0%{transform:scaleX(.22) skewX(-32deg);opacity:0}18%{opacity:1}56%{transform:scaleX(1.24) skewX(-8deg)}80%{transform:scaleX(.95) skewX(0)}100%{transform:scaleX(1)}}
+  @keyframes omSqueeze{0%{transform:scale(1.3,.66);opacity:0}35%{opacity:1}66%{transform:scale(.9,1.16)}100%{transform:scale(1,1)}}
+  @keyframes omMuffle{0%{transform:translateY(18px) scale(.93);opacity:0}65%{opacity:.7}100%{transform:translateY(0) scale(1);opacity:.7}}
+  @keyframes omBreathe{0%{transform:scale(1)}100%{transform:scale(1.07)}}
+  @keyframes omVibe{0%,100%{transform:translate(0,0)}25%{transform:translate(1.5px,-1px)}50%{transform:translate(-1.5px,1px)}75%{transform:translate(1px,1.5px)}}
+  @keyframes omSplitA{0%{transform:translate(0,0)}100%{transform:translate(-8px,-10px) rotate(-1.6deg)}}
+  @keyframes omSplitB{0%{transform:translate(0,0)}100%{transform:translate(8px,10px) rotate(1.6deg)}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#100E0C;background-image:radial-gradient(circle at 1px 1px, rgba(242,237,228,.055) 1px, transparent 1.3px);background-size:4px 4px;font-family:'IBM Plex Mono',ui-monospace,monospace;color:#C9C2B6;padding:44px 40px 88px;">
+
+  <div style="max-width:1460px;margin:0 auto;display:flex;flex-direction:column;gap:40px;">
+
+    <header style="display:flex;align-items:flex-end;justify-content:space-between;gap:32px;border-bottom:2px solid #2A2622;padding-bottom:22px;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="font-size:11px;letter-spacing:.34em;color:#6B635A;text-transform:uppercase;">SFX system · v1 · three treatments, ten motions</div>
+        <h1 style="margin:0;font-family:'Passion One',sans-serif;font-weight:900;font-size:74px;line-height:.84;letter-spacing:-.01em;color:#F2EDE4;text-shadow:5px 5px 0 #E8482C;">VIOLENT<br>PUNCTUATION</h1>
+      </div>
+      <p style="margin:0;max-width:400px;font-size:13px;line-height:1.65;color:#8B8277;text-wrap:pretty;">Vintage comic lettering used as punctuation inside a grounded crime world. Restrained by default, graphically excessive on the beats that earn it. Real text, CSS only.</p>
+    </header>
+
+    <section style="display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:26px;align-items:start;">
+
+      <div style="display:flex;flex-direction:column;gap:12px;min-width:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#6B635A;">
+          <span>Playground — the game screen</span>
+          <span>{{ stageStatus }}</span>
+        </div>
+        <div ref="{{ stageRef }}" style="position:relative;overflow:hidden;border:2px solid #2A2622;background:#0B0A09;height:600px;">
+          <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(180deg, rgba(242,237,228,.028) 0 1px, transparent 1px 3px);pointer-events:none;"></div>
+          <div style="position:absolute;inset:0;padding:34px 38px;display:flex;flex-direction:column;gap:14px;overflow:hidden;">
+            <div style="display:flex;gap:14px;align-items:center;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:#5A5249;border-bottom:1px solid #221F1B;padding-bottom:12px;">
+              <span style="color:#E8482C;">●</span><span>CH. 04 — THE LAUNDRY ON KELLER</span><span style="margin-left:auto;">02:41</span>
+            </div>
+            <div ref="{{ linesRef }}" style="display:flex;flex-direction:column;gap:13px;font-size:15px;line-height:1.7;color:#B9B1A5;max-width:640px;">
+              <p style="margin:0;">The dryers are still turning. Nobody has washed anything here in a year.</p>
+              <p style="margin:0;">Marek is at the back counting bills into a sports bag, and he has not looked up yet.</p>
+              <p style="margin:0;color:#7E766C;">The door behind you does not have a handle on this side.</p>
+              <p style="margin:0;">You can take the bag, or you can take the stairs.</p>
+              <p style="margin:0;color:#E8482C;">&gt; reach for the bag</p>
+            </div>
+            <div style="margin-top:auto;display:flex;align-items:center;gap:10px;border-top:1px solid #221F1B;padding-top:14px;font-size:14px;color:#F2EDE4;">
+              <span style="color:#E8482C;">&gt;</span>
+              <span style="color:#5A5249;">what do you do</span>
+              <span style="width:9px;height:17px;background:#E8482C;animation:omCaret 1.05s steps(1) infinite;"></span>
+            </div>
+          </div>
+          {{ sfxLayer }}
+        </div>
+      </div>
+
+      <aside style="display:flex;flex-direction:column;gap:22px;border:2px solid #2A2622;background:#151310;padding:22px 20px;">
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div style="font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#6B635A;">Direction</div>
+          {{ dirPicker }}
+          <p style="margin:2px 0 0;font-size:11px;line-height:1.6;color:#7E766C;">{{ dirNote }}</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div style="font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#6B635A;">Intensity</div>
+          {{ levelPicker }}
+          <p style="margin:2px 0 0;font-size:11px;line-height:1.6;color:#7E766C;">{{ levelNote }}</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div style="font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#6B635A;">Exit</div>
+          {{ exitPicker }}
+        </div>
+        <div style="height:1px;background:#2A2622;"></div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#6B635A;">Fire</div>
+          {{ wordPad }}
+        </div>
+        <button onClick="{{ fireRandom }}" style="border:2px solid #E8482C;background:#E8482C;color:#100E0C;font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;padding:13px 10px;" style-hover="background:#100E0C;color:#E8482C;">Random hit</button>
+      </aside>
+    </section>
+
+    <sc-if value="{{ showSpec }}" hint-placeholder-val="{{ true }}">
+    <section style="display:flex;flex-direction:column;gap:26px;">
+      <div style="display:flex;align-items:baseline;gap:18px;border-bottom:2px solid #2A2622;padding-bottom:14px;">
+        <h2 style="margin:0;font-family:'Passion One',sans-serif;font-weight:900;font-size:38px;color:#F2EDE4;letter-spacing:.01em;">THREE TREATMENTS, TEN MOTIONS</h2>
+        <span style="font-size:11px;color:#6B635A;letter-spacing:.2em;text-transform:uppercase;">click any specimen to replay</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;">
+
+        <article style="border:2px solid #2A2622;background:#151310;display:flex;flex-direction:column;">
+          <div style="padding:20px 22px;border-bottom:1px solid #2A2622;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-family:'Passion One',sans-serif;font-size:34px;color:#F2EDE4;letter-spacing:.02em;">A · INK</span><span style="font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#E8482C;">restrained</span></div>
+            <p style="margin:0;font-size:12px;line-height:1.65;color:#8B8277;text-wrap:pretty;">Pure lettering. No shapes, no framing. A bone-white face, heavy black outline, one flat red drop shadow offset down-right, sheared eight degrees. The oldest trick in the printed comic and the only one that survives at small sizes.</p>
+          </div>
+          <div style="padding:16px 22px;font-size:11px;line-height:1.9;color:#7E766C;border-bottom:1px solid #2A2622;">
+            <div>Face — <span style="color:#C9C2B6;">Passion One 900</span></div>
+            <div>Stroke — <span style="color:#C9C2B6;">5.5% of cap height, #0A0A09</span></div>
+            <div>Shadow — <span style="color:#C9C2B6;">flat, 0.09em ×2, red then black</span></div>
+            <div>Motion — <span style="color:#C9C2B6;">omPop, 240ms, overshoot 1.15</span></div>
+          </div>
+          <div onClick="{{ replay }}" style="flex:1;display:flex;flex-direction:column;">
+            <div style="flex:1;min-height:150px;display:flex;align-items:center;justify-content:center;background:#0B0A09;border-bottom:1px solid #221F1B;overflow:hidden;padding:14px;">
+              <div data-anim style="animation:omPop 240ms cubic-bezier(.18,1.7,.4,1) both;transform-origin:50% 50%;">
+                <div style="font-family:'Passion One',sans-serif;font-weight:900;font-size:80px;line-height:.9;color:#F4EFE6;-webkit-text-stroke:5px #0A0A09;paint-order:stroke fill;text-shadow:7px 7px 0 #E8482C, 14px 14px 0 #0A0A09;transform:skewX(-8deg) rotate(-4deg);">BLAM!</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 22px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#6B635A;">
+              <span>medium · 240ms</span><span style="color:#E8482C;">replay ↻</span>
+            </div>
+          </div>
+        </article>
+
+        <article style="border:2px solid #2A2622;background:#151310;display:flex;flex-direction:column;">
+          <div style="padding:20px 22px;border-bottom:1px solid #2A2622;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-family:'Passion One',sans-serif;font-size:34px;color:#F2EDE4;letter-spacing:.02em;">B · BURST</span><span style="font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#00A6A6;">loudest</span></div>
+            <p style="margin:0;font-size:12px;line-height:1.65;color:#8B8277;text-wrap:pretty;">The word sits inside a jagged clip-path burst, with a teal plate misregistered behind it the way a cheap four-colour press would drop it. Slams in from oversize and shakes off the impact.</p>
+          </div>
+          <div style="padding:16px 22px;font-size:11px;line-height:1.9;color:#7E766C;border-bottom:1px solid #2A2622;">
+            <div>Face — <span style="color:#C9C2B6;">Rubik Mono One</span></div>
+            <div>Shape — <span style="color:#C9C2B6;">22-point clip-path, 2 plates</span></div>
+            <div>Offset — <span style="color:#C9C2B6;">7px teal, off-register</span></div>
+            <div>Motion — <span style="color:#C9C2B6;">omSlam 320ms + omShake 200ms</span></div>
+          </div>
+          <div onClick="{{ replay }}" style="flex:1;display:flex;flex-direction:column;">
+            <div style="flex:1;min-height:150px;display:flex;align-items:center;justify-content:center;background:#0B0A09;border-bottom:1px solid #221F1B;overflow:hidden;padding:14px;">
+              <div data-anim style="animation:omSlam 320ms cubic-bezier(.2,.9,.25,1) both;transform-origin:50% 50%;">
+                <div style="position:relative;padding:34px 44px;transform:rotate(-6deg);">
+                  <div style="position:absolute;inset:0;background:#00A6A6;clip-path:polygon(50% 0,58% 15%,73% 6%,71% 24%,89% 20%,80% 34%,100% 40%,84% 50%,100% 62%,80% 67%,90% 82%,71% 78%,73% 96%,58% 86%,50% 100%,42% 86%,27% 96%,29% 78%,10% 82%,20% 67%,0 62%,16% 50%,0 40%,20% 34%,11% 20%,29% 24%,27% 6%,42% 15%);transform:translate(8px,7px);"></div>
+                  <div style="position:absolute;inset:0;background:#E8482C;clip-path:polygon(50% 0,58% 15%,73% 6%,71% 24%,89% 20%,80% 34%,100% 40%,84% 50%,100% 62%,80% 67%,90% 82%,71% 78%,73% 96%,58% 86%,50% 100%,42% 86%,27% 96%,29% 78%,10% 82%,20% 67%,0 62%,16% 50%,0 40%,20% 34%,11% 20%,29% 24%,27% 6%,42% 15%);"></div>
+                  <div style="position:relative;font-family:'Rubik Mono One',sans-serif;font-size:36px;line-height:1;color:#F4EFE6;-webkit-text-stroke:4px #0A0A09;paint-order:stroke fill;">KABOOM</div>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 22px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#6B635A;">
+              <span>heavy · 320ms</span><span style="color:#E8482C;">replay ↻</span>
+            </div>
+          </div>
+        </article>
+
+        <article style="border:2px solid #2A2622;background:#151310;display:flex;flex-direction:column;">
+          <div style="padding:20px 22px;border-bottom:1px solid #2A2622;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-family:'Passion One',sans-serif;font-size:34px;color:#F2EDE4;letter-spacing:.02em;">C · SHRED</span><span style="font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#E8482C;">fastest</span></div>
+            <p style="margin:0;font-size:12px;line-height:1.65;color:#8B8277;text-wrap:pretty;">Manga speed lines. The word is stretched vertically, sheared hard, and thrown in from off-screen left in 200ms with a red ghost trailing a frame behind. Built for motion words, not impacts.</p>
+          </div>
+          <div style="padding:16px 22px;font-size:11px;line-height:1.9;color:#7E766C;border-bottom:1px solid #2A2622;">
+            <div>Face — <span style="color:#C9C2B6;">Anton, scaleY 1.35</span></div>
+            <div>Lines — <span style="color:#C9C2B6;">repeating-linear-gradient, masked</span></div>
+            <div>Ghost — <span style="color:#C9C2B6;">red copy, 10px lag</span></div>
+            <div>Motion — <span style="color:#C9C2B6;">omSlide, 200ms, ease-out</span></div>
+          </div>
+          <div onClick="{{ replay }}" style="flex:1;display:flex;flex-direction:column;">
+            <div style="flex:1;min-height:150px;display:flex;align-items:center;justify-content:center;background:#0B0A09;border-bottom:1px solid #221F1B;overflow:hidden;padding:14px;position:relative;">
+              <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,#F2EDE4 0 2px,transparent 2px 11px);-webkit-mask-image:radial-gradient(ellipse 60% 50% at 50% 50%, transparent 30%, #000 85%);mask-image:radial-gradient(ellipse 60% 50% at 50% 50%, transparent 30%, #000 85%);opacity:.16;"></div>
+              <div data-anim style="animation:omSlide 200ms cubic-bezier(.15,.9,.2,1) both;position:relative;">
+                <div style="position:relative;transform:skewX(-14deg) rotate(-2deg);">
+                  <div style="position:absolute;left:11px;top:3px;font-family:'Anton',sans-serif;font-size:52px;line-height:1;letter-spacing:.02em;color:#E8482C;transform:scaleY(1.35);transform-origin:50% 50%;">SKREEECH</div>
+                  <div style="position:relative;font-family:'Anton',sans-serif;font-size:52px;line-height:1;letter-spacing:.02em;color:#F4EFE6;-webkit-text-stroke:4px #0A0A09;paint-order:stroke fill;transform:scaleY(1.35);transform-origin:50% 50%;">SKREEECH</div>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 22px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#6B635A;">
+              <span>medium · 200ms</span><span style="color:#E8482C;">replay ↻</span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;">
+        <div style="border:2px solid #2A2622;background:#151310;padding:20px 22px;display:flex;flex-direction:column;gap:10px;">
+          <div style="font-family:'Passion One',sans-serif;font-size:26px;color:#F2EDE4;">LIGHT</div>
+          <div style="font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#E8482C;">local punctuation</div>
+          <p style="margin:0;font-size:12px;line-height:1.7;color:#8B8277;text-wrap:pretty;">Sits against the line that caused it, roughly cap-height ×2.5. Never overlaps text the player is still reading. The composition does not move. A door, a safety catch, a phone buzzing in a coat.</p>
+          <div style="margin-top:6px;font-size:11px;line-height:1.9;color:#7E766C;"><div>Size — <span style="color:#C9C2B6;">38px</span></div><div>Enter — <span style="color:#C9C2B6;">220ms</span></div><div>Hold — <span style="color:#C9C2B6;">500ms</span></div><div>Disruption — <span style="color:#C9C2B6;">none</span></div></div>
+        </div>
+        <div style="border:2px solid #2A2622;background:#151310;padding:20px 22px;display:flex;flex-direction:column;gap:10px;">
+          <div style="font-family:'Passion One',sans-serif;font-size:26px;color:#F2EDE4;">MEDIUM</div>
+          <div style="font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#E8482C;">breaks the composition</div>
+          <p style="margin:0;font-size:12px;line-height:1.7;color:#8B8277;text-wrap:pretty;">Lands over the reading area at an angle, dims the prose behind it to 45%, and clears. Reading is interrupted for about a second. A punch that connects, a bottle going through a window.</p>
+          <div style="margin-top:6px;font-size:11px;line-height:1.9;color:#7E766C;"><div>Size — <span style="color:#C9C2B6;">104px</span></div><div>Enter — <span style="color:#C9C2B6;">300ms</span></div><div>Hold — <span style="color:#C9C2B6;">820ms</span></div><div>Disruption — <span style="color:#C9C2B6;">dim + tilt</span></div></div>
+        </div>
+        <div style="border:2px solid #2A2622;background:#151310;padding:20px 22px;display:flex;flex-direction:column;gap:10px;">
+          <div style="font-family:'Passion One',sans-serif;font-size:26px;color:#F2EDE4;">HEAVY</div>
+          <div style="font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#E8482C;">owns the viewport</div>
+          <p style="margin:0;font-size:12px;line-height:1.7;color:#8B8277;text-wrap:pretty;">Full bleed. The screen shakes, a halftone wash blows out the panel, and nothing else is legible until it goes. Reserve it — two or three times in a chapter, or it stops meaning anything.</p>
+          <div style="margin-top:6px;font-size:11px;line-height:1.9;color:#7E766C;"><div>Size — <span style="color:#C9C2B6;">fills width</span></div><div>Enter — <span style="color:#C9C2B6;">440ms</span></div><div>Hold — <span style="color:#C9C2B6;">1100ms</span></div><div>Disruption — <span style="color:#C9C2B6;">shake + wash</span></div></div>
+        </div>
+      </div>
+
+      <div style="border:2px solid #2A2622;background:#151310;">
+        <div style="display:grid;grid-template-columns:.85fr .7fr 1.15fr .65fr 2fr;gap:0;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#6B635A;border-bottom:2px solid #2A2622;">
+          <div style="padding:14px 22px;">Word</div><div style="padding:14px 16px;">Treatment</div><div style="padding:14px 16px;">Motion</div><div style="padding:14px 16px;">Intensity</div><div style="padding:14px 16px;">Use</div>
+        </div>
+        {{ specRows }}
+      </div>
+    </section>
+    </sc-if>
+
+    <footer style="border-top:2px solid #2A2622;padding-top:20px;font-size:11px;line-height:1.8;color:#6B635A;max-width:760px;text-wrap:pretty;">Ten keyframes, three type recipes, three intensity tiers. Every effect is real text in the DOM, so it is selectable, translatable, and readable by a screen reader. Nothing here uses canvas, SVG animation or particles. Under <span style="color:#C9C2B6;">prefers-reduced-motion</span> the entrances collapse to a 90ms fade and the screen shake is dropped.</footer>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;defaultDirection&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;AUTO&quot;,&quot;INK&quot;,&quot;BURST&quot;,&quot;SHRED&quot;],&quot;default&quot;:&quot;AUTO&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Defaults&quot;},&quot;defaultIntensity&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;LIGHT&quot;,&quot;MEDIUM&quot;,&quot;HEAVY&quot;],&quot;default&quot;:&quot;MEDIUM&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Defaults&quot;},&quot;autoDemo&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behaviour&quot;},&quot;respectReducedMotion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behaviour&quot;},&quot;showSpec&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behaviour&quot;}}">
+const RED = '#E8482C', TEAL = '#00A6A6', BONE = '#F4EFE6', INK = '#0A0A09';
+
+// ── THE CATALOG ───────────────────────────────────────────────────────────────
+// One entry per sound. Everything about a word lives here: where it appears in
+// the trigger pad, how it is drawn, how it moves, and what it is for.
+//   word    the literal text, punctuation included
+//   group   trigger-pad section: impact | explosion | motion | mech
+//   level   its natural intensity: LIGHT | MEDIUM | HEAVY
+//   dir     treatment: INK | BURST | SHRED
+//   motion  one of the ten keys in MOTION_LABEL
+//   size    multiplier on the intensity's base size
+//   hold    multiplier on the intensity's hold duration
+//   shake   'hard' | 'med' — jolts the lettering (and the screen, if HEAVY+hard)
+//   flat    single black drop shadow instead of the red/black double
+//   tint    override the bone fill
+//   faint   render at 70% opacity
+//   split   tear the word in half and separate the pieces
+//   vibe    keep trembling for as long as it is on screen
+//   breathe keep growing while it holds
+//   use     documentation copy for the spec table
+const CATALOG = [
+  { word: 'BLAM!', group: 'impact', level: 'HEAVY', dir: 'INK', motion: 'crack', size: 1.15, shake: 'hard',
+    use: 'Gunshot in a closed room. Arrives already at full size — a bang has no anticipation.' },
+  { word: 'POW!', group: 'impact', level: 'MEDIUM', dir: 'BURST', motion: 'slam', size: 1, shake: 'med',
+    use: 'A punch that lands. Burst plate behind it, shakes off the contact.' },
+  { word: 'THUD!', group: 'impact', level: 'MEDIUM', dir: 'INK', motion: 'drop', size: 1, flat: true, tint: '#CFC7BA', shake: 'med',
+    use: 'Body or bag hitting a floor. Falls in, squashes wide, settles. Grey, not red.' },
+  { word: 'KRAK!', group: 'impact', level: 'HEAVY', dir: 'BURST', motion: 'crack', size: .95, split: true, shake: 'hard',
+    use: 'Bone, glass, a chair leg. The word tears along the middle and the halves separate.' },
+  { word: 'SHTOK!', group: 'impact', level: 'LIGHT', dir: 'INK', motion: 'tick', size: .78, flat: true,
+    use: 'Short and wet. Small, flat, gone before you finish reading it.' },
+  { word: 'BOOM!', group: 'explosion', level: 'HEAVY', dir: 'BURST', motion: 'slam', size: 1.1, breathe: true, shake: 'hard',
+    use: 'Slams in and keeps growing while it holds. Expansion, not impact.' },
+  { word: 'KABOOM!', group: 'explosion', level: 'HEAVY', dir: 'BURST', motion: 'slam', size: 1.15, breathe: true, shake: 'hard',
+    use: 'The rare one. Fire, gas, a car. Twice a chapter at most.' },
+  { word: 'WHOOSH!', group: 'motion', level: 'LIGHT', dir: 'SHRED', motion: 'sweep', size: .9,
+    use: 'Never stops. Enters left, exits right — a swing that misses.' },
+  { word: 'SKREEECH!', group: 'motion', level: 'MEDIUM', dir: 'SHRED', motion: 'stretch', size: .95, vibe: true, hold: 1.25,
+    use: 'Pulled out of nothing horizontally and left vibrating. Tyres, brakes, dragged metal.' },
+  { word: 'SPRRT!', group: 'motion', level: 'LIGHT', dir: 'SHRED', motion: 'sweep', size: .7,
+    use: 'Same pass-through as WHOOSH, small and fast.' },
+  { word: 'NNNGH!', group: 'motion', level: 'MEDIUM', dir: 'SHRED', motion: 'squeeze', size: .9, vibe: true, hold: 1.4,
+    use: 'Compressed flat, then strains open and trembles. Effort, not impact.' },
+  { word: 'CLICK.', group: 'mech', level: 'LIGHT', dir: 'INK', motion: 'tick', size: .6, flat: true, hold: .7,
+    use: 'Safety catch, lock, receiver going down. Full stop, no exclamation, no red.' },
+  { word: 'BZZZT!', group: 'mech', level: 'LIGHT', dir: 'INK', motion: 'buzz', size: .7, tint: '#00A6A6', vibe: true,
+    use: 'Stepped six-frame jitter in teal. Phone on metal, strip light, gate buzzer.' },
+  { word: 'THUMP…', group: 'mech', level: 'LIGHT', dir: 'INK', motion: 'muffle', size: .85, flat: true, faint: true, hold: 1.3,
+    use: 'Rises from below at 70% opacity. Something heavy, elsewhere in the building.' }
+];
+
+const BY_WORD = CATALOG.reduce((m, e) => { m[e.word] = e; return m; }, {});
+
+const GROUPS = [
+  ['Impact', 'impact'], ['Explosion', 'explosion'], ['Motion / scream', 'motion'], ['Mechanical', 'mech']
+];
+
+const FALLBACK = { dir: 'INK', motion: 'pop', size: 1, level: 'MEDIUM' };
+
+const MOTION_LABEL = {
+  crack: 'snaps in at full size, no wind-up',
+  slam: 'oversize slam, then shake',
+  drop: 'falls, squashes, settles',
+  sweep: 'passes through the frame',
+  stretch: 'stretched out from nothing',
+  squeeze: 'compressed, then strains open',
+  tick: 'small precise pop',
+  buzz: 'stepped jitter, electric',
+  muffle: 'rises from below, half-opacity',
+  pop: 'overshoot pop'
+};
+
+const TITLE = s => s.charAt(0) + s.slice(1).toLowerCase();
+
+const LEVEL_NOTE = {
+  LIGHT: 'Local punctuation. Sits by the line that caused it and leaves the composition alone.',
+  MEDIUM: 'Briefly breaks the composition — dims the prose behind it and tilts across the panel.',
+  HEAVY: 'Allowed to dominate the viewport. Screen shake, halftone wash, nothing else legible.'
+};
+
+const SIZE = { LIGHT: 38, MEDIUM: 104, HEAVY: 168 };
+const ENTER = { LIGHT: 220, MEDIUM: 300, HEAVY: 440 };
+const HOLD = { LIGHT: 500, MEDIUM: 820, HEAVY: 1100 };
+const BURST_PTS = 'polygon(50% 0,58% 15%,73% 6%,71% 24%,89% 20%,80% 34%,100% 40%,84% 50%,100% 62%,80% 67%,90% 82%,71% 78%,73% 96%,58% 86%,50% 100%,42% 86%,27% 96%,29% 78%,10% 82%,20% 67%,0 62%,16% 50%,0 40%,20% 34%,11% 20%,29% 24%,27% 6%,42% 15%)';
+
+const h = React.createElement;
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const d = ['AUTO', 'INK', 'BURST', 'SHRED'];
+    this.state = {
+      dir: d.indexOf(props.defaultDirection) >= 0 ? props.defaultDirection : 'AUTO',
+      level: ['LIGHT', 'MEDIUM', 'HEAVY'].indexOf(props.defaultIntensity) >= 0 ? props.defaultIntensity : 'MEDIUM',
+      exit: 'SNAP',
+      fired: [],
+      last: '—'
+    };
+    this.stageRef = React.createRef();
+    this.linesRef = React.createRef();
+    this.n = 0;
+    this.timers = [];
+  }
+
+  componentDidMount() {
+    if (this.props.autoDemo) {
+      this.demo = setInterval(() => this.fireRandom(), 2600);
+    }
+  }
+  componentWillUnmount() {
+    clearInterval(this.demo);
+    this.timers.forEach(clearTimeout);
+  }
+
+  get reduced() {
+    return this.props.respectReducedMotion !== false &&
+      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  anchor(level) {
+    const stage = this.stageRef.current, lines = this.linesRef.current;
+    if (level !== 'LIGHT' || !stage || !lines) return null;
+    const kids = Array.from(lines.children);
+    const el = kids[Math.floor(Math.random() * kids.length)];
+    if (!el) return null;
+    const s = stage.getBoundingClientRect(), r = el.getBoundingClientRect();
+    return { x: Math.min(r.left - s.left + r.width * (0.35 + Math.random() * 0.5), s.width - 150), y: r.top - s.top - 6 };
+  }
+
+  fire = (word, forced) => {
+    const level = forced || this.state.level;
+    const id = ++this.n;
+    const r = this.recipe(word);
+    const item = {
+      id, word, level, exit: this.state.exit,
+      dirOverride: this.state.dir === 'AUTO' ? null : this.state.dir,
+      rot: level === 'HEAVY' ? -3 + Math.random() * 6 : -9 + Math.random() * 14,
+      at: this.anchor(level)
+    };
+    const life = this.plan(item).life;
+    this.setState(s => ({ fired: s.fired.concat(item), last: word + ' · ' + (r.motion || 'pop') + ' · ' + level }));
+    this.timers.push(setTimeout(() => this.setState(s => ({ fired: s.fired.filter(f => f.id !== id) })), life));
+    if (level === 'HEAVY' && r.shake === 'hard' && !this.reduced && this.stageRef.current) {
+      const el = this.stageRef.current.children[1];
+      if (!el) return;
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = 'omStage 420ms cubic-bezier(.36,.07,.19,.97) both';
+    }
+  };
+
+  fireRandom = () => {
+    const pick = CATALOG[Math.floor(Math.random() * CATALOG.length)];
+    this.setState({ level: pick.level }, () => this.fire(pick.word));
+  };
+
+  replay = (e) => {
+    const el = e.currentTarget.querySelector('[data-anim]');
+    if (!el) return;
+    const a = el.style.animation;
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = a;
+  };
+
+  // ---- specimen construction ------------------------------------------------
+
+  recipe(word) { return BY_WORD[word] || FALLBACK; }
+
+  // split works on any treatment: render the finished glyph three times — one
+  // hidden copy for layout, two clipped along a ragged tear — and separate them.
+  glyph(word, dir, size, r) {
+    r = r || FALLBACK;
+    const base = this.glyphBase(word, dir, size, r);
+    if (!r.split) return base;
+    const half = (clip, anim) => h('div', {
+      style: {
+        position: 'absolute', left: 0, top: 0, clipPath: clip,
+        animation: anim + ' 300ms cubic-bezier(.2,.85,.3,1) 70ms both'
+      }
+    }, base);
+    return h('div', { style: { position: 'relative' } },
+      h('div', { style: { visibility: 'hidden' } }, base),
+      half('polygon(0 0,100% 0,100% 44%,71% 55%,37% 43%,0 53%)', 'omSplitA'),
+      half('polygon(0 53%,37% 43%,71% 55%,100% 44%,100% 100%,0 100%)', 'omSplitB'));
+  }
+
+  glyphBase(word, dir, size, r) {
+    const stroke = Math.max(2, size * 0.055);
+    if (dir === 'INK') {
+      const o = Math.max(3, size * 0.09);
+      const base = {
+        fontFamily: "'Passion One', sans-serif", fontWeight: 900, fontSize: size, lineHeight: .9,
+        color: r.tint || BONE, WebkitTextStroke: stroke + 'px ' + INK, paintOrder: 'stroke fill',
+        textShadow: r.flat ? o + 'px ' + o + 'px 0 ' + INK
+          : o + 'px ' + o + 'px 0 ' + RED + ', ' + (o * 2) + 'px ' + (o * 2) + 'px 0 ' + INK,
+        transform: 'skewX(-8deg)', whiteSpace: 'nowrap', opacity: r.faint ? .7 : 1
+      };
+      return h('div', { style: base }, word);
+    }
+    if (dir === 'BURST') {
+      const s = size * 0.44;
+      return h('div', { style: { position: 'relative', padding: (s * 0.9) + 'px ' + (s * 1.2) + 'px' } },
+        h('div', { style: { position: 'absolute', inset: 0, background: TEAL, clipPath: BURST_PTS, transform: 'translate(' + (s * .2) + 'px,' + (s * .17) + 'px)' } }),
+        h('div', { style: { position: 'absolute', inset: 0, background: RED, clipPath: BURST_PTS } }),
+        h('div', {
+          style: {
+            position: 'relative', fontFamily: "'Rubik Mono One', sans-serif", fontSize: s, lineHeight: 1,
+            color: BONE, WebkitTextStroke: Math.max(2, s * 0.1) + 'px ' + INK, paintOrder: 'stroke fill', whiteSpace: 'nowrap'
+          }
+        }, word.replace(/[!.…]/g, '')));
+    }
+    const f = size * 0.66;
+    const t = { fontFamily: "'Anton', sans-serif", fontSize: f, lineHeight: 1, letterSpacing: '.02em', transform: 'scaleY(1.35)', transformOrigin: '50% 50%', whiteSpace: 'nowrap' };
+    return h('div', { style: { position: 'relative', transform: 'skewX(-14deg)' } },
+      h('div', { style: Object.assign({}, t, { position: 'absolute', left: f * .2, top: f * .06, color: RED }) }, word),
+      h('div', { style: Object.assign({}, t, { position: 'relative', color: BONE, WebkitTextStroke: Math.max(2, f * .08) + 'px ' + INK, paintOrder: 'stroke fill' }) }, word));
+  }
+
+  plan(item) {
+    const { level, word, exit } = item;
+    const r = this.recipe(word);
+    const base = ENTER[level];
+    const hold = Math.round(HOLD[level] * (r.hold || 1));
+    if (this.reduced) return { enter: 'omTick 90ms linear both', dur: 90, hold: hold, out: 'omSnap 60ms steps(1) ' + (90 + hold) + 'ms both', life: 150 + hold };
+    const M = {
+      crack:   ['omCrack',   Math.round(base * .72), 'cubic-bezier(.15,.9,.25,1)'],
+      slam:    ['omSlam',    base,                   'cubic-bezier(.2,.9,.25,1)'],
+      drop:    ['omDrop',    Math.round(base * 1.35),'cubic-bezier(.3,.7,.3,1)'],
+      sweep:   ['omSweep',   Math.round(base * 2.1), 'cubic-bezier(.35,.05,.65,.95)'],
+      stretch: ['omStretch', Math.round(base * 1.1), 'cubic-bezier(.15,.9,.2,1)'],
+      squeeze: ['omSqueeze', Math.round(base * 1.3), 'cubic-bezier(.2,1.2,.35,1)'],
+      tick:    ['omTick',    150,                    'cubic-bezier(.2,1.5,.4,1)'],
+      buzz:    ['omBuzz',    260,                    'steps(6)'],
+      muffle:  ['omMuffle',  Math.round(base * 1.4), 'cubic-bezier(.25,.8,.3,1)'],
+      pop:     ['omPop',     base,                   'cubic-bezier(.18,1.7,.4,1)']
+    };
+    const m = M[r.motion] || M.pop;
+    const enter = m[0] + ' ' + m[1] + 'ms ' + m[2] + ' both';
+    if (r.motion === 'sweep') return { enter: enter, dur: m[1], hold: 0, out: null, life: m[1] + 40 };
+    const out = exit === 'SNAP'
+      ? 'omSnap 60ms steps(1) ' + (m[1] + hold) + 'ms both'
+      : 'omDrift 260ms ease-in ' + (m[1] + hold) + 'ms both';
+    return { enter: enter, dur: m[1], hold: hold, out: out, life: m[1] + hold + (exit === 'SNAP' ? 70 : 270) };
+  }
+
+  node(item) {
+    const { level, word, rot, at } = item;
+    const r = this.recipe(word);
+    const dir = item.dirOverride || r.dir;
+    const size = Math.round((level === 'HEAVY' ? 168 : SIZE[level]) * (r.size || 1));
+    const p = this.plan(item);
+    let inner = h('div', { style: { animation: p.out ? p.enter + ', ' + p.out : p.enter, transformOrigin: '50% 50%' } }, this.glyph(word, dir, size, r));
+    if (r.breathe && !this.reduced) inner = h('div', { style: { animation: 'omBreathe ' + (p.dur + p.hold) + 'ms ease-out both' } }, inner);
+    if (r.vibe && !this.reduced) inner = h('div', { style: { animation: 'omVibe 90ms steps(2) infinite' } }, inner);
+    if (r.shake && level !== 'LIGHT' && !this.reduced) inner = h('div', { style: { animation: 'omShake ' + (r.shake === 'hard' ? 240 : 180) + 'ms steps(5) ' + Math.round(p.dur * .45) + 'ms 1 both' } }, inner);
+
+    const pos = at
+      ? { left: at.x, top: at.y, transform: 'translate(-50%,-100%) rotate(' + rot + 'deg)' }
+      : level === 'HEAVY'
+        ? { inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'rotate(' + rot + 'deg)' }
+        : { left: '52%', top: '46%', transform: 'translate(-50%,-50%) rotate(' + rot + 'deg)' };
+
+    return h('div', { key: item.id, style: Object.assign({ position: 'absolute', pointerEvents: 'none', zIndex: 5 }, pos) }, inner);
+  }
+
+  renderVals() {
+    const st = this.state;
+    const wash = st.fired.some(f => f.level === 'HEAVY') && !this.reduced;
+    const dim = st.fired.some(f => f.level !== 'LIGHT');
+
+    const layer = h(React.Fragment, null,
+      h('div', {
+        style: {
+          position: 'absolute', inset: 0, pointerEvents: 'none', background: 'rgba(11,10,9,.62)',
+          opacity: dim ? 1 : 0, transition: 'opacity 140ms linear', zIndex: 3
+        }
+      }),
+      wash ? h('div', {
+        key: 'w' + st.fired.filter(f => f.level === 'HEAVY').map(f => f.id).join(),
+        style: {
+          position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 4,
+          background: 'radial-gradient(circle at 1.5px 1.5px, ' + RED + ' 1.5px, transparent 1.8px) 0 0/7px 7px',
+          animation: 'omWash 520ms ease-out both'
+        }
+      }) : null,
+      st.fired.map(f => this.node(f))
+    );
+
+    const seg = (opts, cur, set) => h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(' + opts.length + ',1fr)', gap: 6 } },
+      opts.map(o => h('button', {
+        key: o, onClick: () => set(o),
+        style: {
+          border: '2px solid ' + (cur === o ? RED : '#2A2622'), background: cur === o ? RED : 'transparent',
+          color: cur === o ? '#100E0C' : '#8B8277', fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+          fontWeight: 600, letterSpacing: '.14em', padding: '10px 4px', textTransform: 'uppercase'
+        }
+      }, o)));
+
+    const pad = h('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+      GROUPS.map(([label, key]) => h('div', { key: key, style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+        h('div', { style: { fontSize: 9, letterSpacing: '.2em', textTransform: 'uppercase', color: '#4E483F' } }, label),
+        h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 6 } },
+          CATALOG.filter(e => e.group === key).map(e => h('button', {
+            key: e.word, onClick: () => this.fire(e.word),
+            title: e.motion + ' — ' + MOTION_LABEL[e.motion],
+            style: {
+              border: '1px solid #332F2A', background: '#0F0D0B', color: '#C9C2B6',
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: '.06em', padding: '8px 10px'
+            }
+          }, e.word))))));
+
+    const rows = CATALOG.map((e, i) => h('div', {
+      key: e.word, onClick: () => this.fire(e.word, e.level),
+      style: {
+        display: 'grid', gridTemplateColumns: '.85fr .7fr 1.15fr .65fr 2fr', cursor: 'pointer',
+        borderTop: i ? '1px solid #221F1B' : 'none', fontSize: 12, color: '#8B8277'
+      }
+    },
+      h('div', { style: { padding: '13px 22px', color: BONE, fontWeight: 500 } }, e.word),
+      h('div', { style: { padding: '13px 16px' } }, e.dir),
+      h('div', { style: { padding: '13px 16px', color: '#9E958A' } }, e.motion + ' — ' + MOTION_LABEL[e.motion]),
+      h('div', { style: { padding: '13px 16px', color: e.level === 'HEAVY' ? RED : e.level === 'MEDIUM' ? '#C9C2B6' : '#7E766C' } }, TITLE(e.level)),
+      h('div', { style: { padding: '13px 16px', lineHeight: 1.55 } }, e.use)));
+
+    return {
+      sfxLayer: layer,
+      stageRef: this.stageRef,
+      linesRef: this.linesRef,
+      stageStatus: st.last,
+      levelNote: LEVEL_NOTE[st.level],
+      dirPicker: seg(['AUTO', 'INK', 'BURST', 'SHRED'], st.dir, v => this.setState({ dir: v })),
+      dirNote: st.dir === 'AUTO'
+        ? 'Each word picks its own treatment and motion. This is the system as designed.'
+        : 'Forcing every word through ' + st.dir + ' — useful for comparing, wrong for shipping.',
+      levelPicker: seg(['LIGHT', 'MEDIUM', 'HEAVY'], st.level, v => this.setState({ level: v })),
+      exitPicker: seg(['SNAP', 'DRIFT'], st.exit, v => this.setState({ exit: v })),
+      wordPad: pad,
+      specRows: rows,
+      fireRandom: this.fireRandom,
+      replay: this.replay,
+      showSpec: this.props.showSpec !== false
+    };
+  }
+}
+
+</script>
+</body>
+</html>
