@@ -26,7 +26,16 @@
     "no-dependencies"
   ],
   "license": "MIT",
-  "engines": {
-    "node": ">=18"
-  }
+  "homepage": "https://helvetiaai.github.io/comic-sfx/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Helvetiaai/comic-sfx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Helvetiaai/comic-sfx/issues"
+  },
+  "sideEffects": [
+    "./comic-sfx.css",
+    "./comic-sfx.js"
+  ]
 }

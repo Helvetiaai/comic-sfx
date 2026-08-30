@@ -10,17 +10,37 @@ Two files ship into your game. A browser-based workbench designs the sounds.
 
 ---
 
-## Quick start
+## Install
 
-Copy `comic-sfx.js` and `comic-sfx.css` into your project, load the fonts, and fire:
+Three ways in, in order of least commitment. There is no build step in any of them.
+
+**Straight from a CDN** — nothing to install:
 
 ```html
-<link rel="stylesheet" href="./comic-sfx.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Helvetiaai/comic-sfx@main/comic-sfx.css">
+<script type="module">
+  import { ComicSFX } from 'https://cdn.jsdelivr.net/gh/Helvetiaai/comic-sfx@main/comic-sfx.js';
+</script>
+```
+
+**As a dependency:**
+
+```bash
+npm install github:Helvetiaai/comic-sfx
+```
+
+**Or copy `comic-sfx.js` and `comic-sfx.css` into your project.** They are two standalone files with no imports of their own; vendoring them is a perfectly good answer for a game.
+
+Whichever you pick, the fonts have to be loaded too:
+
+```html
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Passion+One:wght@900&family=Rubik+Mono+One&family=Anton&display=swap">
 ```
 
+## Quick start
+
 ```js
-import { ComicSFX } from './comic-sfx.js';
+import { ComicSFX } from './comic-sfx.js';   // or the CDN URL, or 'comic-sfx'
 
 const sfx = new ComicSFX(document.querySelector('#reading-area'), {
   shakeTarget: document.querySelector('#prose')   // jolted by HEAVY hits
@@ -31,7 +51,17 @@ sfx.fire('CLICK.', { anchor: lineEl });           // quiet effects sit by a line
 sfx.fire('KABOOM!', { level: 'HEAVY', exit: 'DRIFT' });
 ```
 
-That is the whole integration. It works in React, Vue, Svelte or plain HTML — the class only needs a DOM element to mount into. There is no build step and nothing to configure.
+That is the whole integration. It works in React, Vue, Svelte or plain HTML — the class only needs a DOM element to mount into.
+
+In React, hold the instance in a ref and tear it down on unmount:
+
+```jsx
+useEffect(() => {
+  const sfx = new ComicSFX(ref.current, { shakeTarget: proseRef.current });
+  sfxRef.current = sfx;
+  return () => sfx.destroy();
+}, []);
+```
 
 Open `demo.html` through a local server for a runnable example.
 
@@ -155,6 +185,7 @@ If your game is played with a screen reader, announce effects through an `aria-l
 | `index.html` | the workbench |
 | `demo.html` | minimal vanilla example |
 | `DESIGN.md` | the full design specification and rationale |
+| `AGENTS.md` | orientation for coding agents working in this repo |
 | `design/prototype.dc.html` | the original visual prototype |
 
 ## Licence
