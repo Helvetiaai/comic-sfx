@@ -194,6 +194,20 @@ function glyphBase(word, dir, size, r) {
  */
 const FIT_MARGIN = { LIGHT: 0.92, MEDIUM: 0.90, HEAVY: 0.94 };
 
+/* The largest scale at which each entrance is actually *visible*. Peak scale
+   alone would be misleading: slam opens at 2.7 but at opacity 0 behind a 10px
+   blur and is down to 0.88 by the time it is opaque, so fitting its raw peak
+   would shrink explosions to nothing for an overshoot nobody sees. crack is
+   the opposite — it is opaque by 5%, still near 1.4, which is why big words
+   were clipping on entry.
+   Each value is the scale at the frame where the word first reads as a word
+   rather than a smear — opacity past ~0.8 with under 2px of blur left. For
+   slam that is 34% in, at 1.28; for crack it is 5% in, at 1.32. */
+const PEAK = {
+  crack: 1.32, slam: 1.28, drop: 1.14, sweep: 1.00, stretch: 1.24,
+  squeeze: 1.30, tick: 1.08, buzz: 1.00, muffle: 1.00, pop: 1.15
+};
+
 /* The painted box, not the layout box: each treatment transforms itself
    (INK skews, SHRED skews and stretches) and offsets ghost copies, so the
    only trustworthy number is the union of what is actually on screen. The
@@ -213,11 +227,20 @@ function visualBox(node) {
   return { w: r - l, h: bot - t };
 }
 
-function fitScale(box, boxW, boxH, level, r, reduced, rot) {
+function fitScale(box, boxW, boxH, level, r, reduced, rot, size) {
   if (!boxW || !boxH || !box.w || !box.h) return 1;
-  // `breathe` keeps growing through the hold, so allow for where it ends up
-  const grow = (r.breathe && !reduced) ? 1.07 : 1;
-  const w = box.w * grow, h = box.h * grow;
+  /* The stroke and the hard drop shadow are painted outside every geometry
+     API — getBoundingClientRect, offsetWidth and scrollWidth all report the
+     layout box and miss them. Both are derived from the font size, so add
+     them back: stroke on each side, shadow to the right and below. */
+  const stroke = Math.max(2, size * 0.055), shadow = Math.max(3, size * 0.09) * 2;
+  let w = box.w + stroke * 2 + shadow;
+  let h = box.h + stroke * 2 + shadow;
+
+  // allow for the entrance overshoot and for `breathe` growing through the hold
+  const grow = ((r.breathe && !reduced) ? 1.07 : 1) *
+               (reduced ? 1 : (PEAK[r.motion] || 1.15));
+  w *= grow; h *= grow;
 
   // a tilted box is wider than its own width
   const rad = Math.abs(rot || 0) * Math.PI / 180;
@@ -385,8 +408,14 @@ export class ComicSFX {
     /* Measure untilted, fit, then tilt and start the entrance — all
        synchronously, before the browser paints, so there is no visible pop. */
     mount.style.transform = 'none';
-    const fit = fitScale(visualBox(art), this.root.clientWidth, this.root.clientHeight,
-                         level, r, reduced, rot);
+    /* Measure the container the same way the glyph is measured. clientWidth
+       ignores transforms but getBoundingClientRect does not, so mixing them
+       silently breaks the fit wherever an ancestor is scaled — which is
+       exactly what a device preview does. Same coordinate space, and any
+       enclosing scale cancels out of the ratio. */
+    const rootBox = this.root.getBoundingClientRect();
+    const fit = fitScale(visualBox(art), rootBox.width, rootBox.height,
+                         level, r, reduced, rot, size);
     mount.style.transform = fit < 1
       ? pos.transform + ' scale(' + fit.toFixed(4) + ')'
       : pos.transform;

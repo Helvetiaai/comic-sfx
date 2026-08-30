@@ -172,7 +172,11 @@ If your game is played with a screen reader, announce effects through an `aria-l
 
 ## Fitting
 
-Base sizes are absolute pixels because that is what the design specifies — a HEAVY effect is 168px. A 168px word does not fit a 375px phone, so every effect is measured once it is laid out and scaled down if it would run past the reading area. The tilt, the `breathe` growth and the pixel displacement from `shake`, `split` and `vibe` are all part of that calculation.
+Base sizes are absolute pixels because that is what the design specifies — a HEAVY effect is 168px. A 168px word does not fit a 375px phone, so every effect is measured once it is laid out and scaled down if it would run past the reading area.
+
+The standard it holds to is that **nothing legible is ever clipped**, at any point from the first frame to the last. That is more than fitting the resting size, so the calculation also covers the entrance overshoot (`crack` opens at 1.4× and is opaque there), the stroke and drop shadow — which paint outside every geometry API and add roughly 29% of the font size — the tilt, `breathe` growth, and the pixel displacement from `shake`, `split` and `vibe`.
+
+Deliberately transparent, heavily blurred frames are exempt: `slam` opens at 2.7× behind a 10px blur at zero opacity, and fitting that would shrink explosions to nothing for an overshoot nobody can see. It is fitted from the frame where it becomes legible instead.
 
 Anything that already fits is left at its exact specified size, so nothing changes on desktop. `fire()` reports what happened:
 
