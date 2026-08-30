@@ -68,7 +68,7 @@ To confirm the library still parses and exports what it should:
 node -e "import('./comic-sfx.js').then(m => console.log(Object.keys(m).join(', ')))"
 ```
 
-Expected: `CATALOG, COLORS, ComicSFX, ENTER, HOLD, MOTIONS, MOTION_LABEL, SIZE, renderGlyph`.
+Expected: `CATALOG, COLORS, ComicSFX, ENTER, HOLD, MOTIONS, MOTION_LABEL, SIZE, STYLES, renderGlyph`.
 
 ### Overflow coverage
 
