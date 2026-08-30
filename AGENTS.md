@@ -65,43 +65,69 @@ Expected: `CATALOG, COLORS, ComicSFX, ENTER, HOLD, MOTIONS, MOTION_LABEL, SIZE, 
 
 ### Overflow coverage
 
-Paste into the workbench console after any change to the lettering, the modifiers or `fitScale`. It fires every sound at every intensity across six widths, forces each animation to its end state, and compares the painted box against the panel. Animations are throttled in a background tab, which is why it finishes them explicitly rather than waiting.
+Paste into the workbench console after any change to the lettering, the modifiers or `fitScale`. Three things about it are load-bearing, and each one hid a real bug during development:
+
+- **It seeks animations explicitly.** They are throttled in a background tab, so an unstarted entrance sits on its first keyframe and you measure `scale(2.7)` instead of the resting size.
+- **It samples through the entrance, not only at rest.** Clipping on arrival is the failure people actually see.
+- **It resolves opacity and blur up the ancestor chain.** Both live on the animated wrapper, so a child reports `opacity: 1` while invisible, and invisible frames must not count as clipping.
+
+It also drives the preview at two scales, because comparing a `getBoundingClientRect` measurement against `clientWidth` breaks silently wherever an ancestor is scaled.
 
 ```js
 const m = await import('./comic-sfx.js?v=' + Date.now());
+await document.fonts.ready;
 const game = document.getElementById('game'), dev = document.getElementById('device');
-document.getElementById('deviceWrap').style.transform = 'scale(1)';
+const wrap = document.getElementById('deviceWrap');
+const eff = (el, root) => { let op = 1, bl = 0, n = el;
+  while (n && n !== root.parentElement) { const cs = getComputedStyle(n);
+    op *= +cs.opacity;
+    const b = /blur\(([\d.]+)px\)/.exec(cs.filter || ''); if (b) bl = Math.max(bl, +b[1]);
+    n = n.parentElement; }
+  return { op, bl }; };
+const worst = (root, g) => { let bad = 0;
+  for (const f of [0,.05,.1,.15,.2,.25,.3,.34,.42,.5,.6,.7,.85,1]) {
+    for (const el of [root, ...root.querySelectorAll('*')])
+      for (const a of el.getAnimations()) {
+        const d = (a.effect && a.effect.getTiming().duration) || 0;
+        if (d && isFinite(d)) a.currentTime = d * f; }
+    let L=1e9, T=1e9, R=-1e9, B=-1e9;
+    for (const el of root.querySelectorAll('*')) { const b = el.getBoundingClientRect();
+      if (!b.width || !b.height) continue;
+      const e = eff(el, root); if (e.op < 0.6 || e.bl > 3) continue;   // not yet legible
+      L=Math.min(L,b.left); T=Math.min(T,b.top); R=Math.max(R,b.right); B=Math.max(B,b.bottom); }
+    if (R < -1e8) continue;
+    bad = Math.max(bad, Math.max(0,g.left-L) + Math.max(0,R-g.right)
+                      + Math.max(0,g.top-T) + Math.max(0,B-g.bottom)); }
+  return bad; };
 const sfx = new m.ComicSFX(game), out = []; let n = 0;
-const settle = r => { for (const el of [r, ...r.querySelectorAll('*')])
-  for (const a of el.getAnimations()) { try { a.finish(); } catch { a.currentTime = 200; } } };
-const box = r => { let L=1e9,T=1e9,R=-1e9,B=-1e9;
-  for (const el of r.querySelectorAll('*')) { const b = el.getBoundingClientRect();
-    if (!b.width || !b.height) continue;
-    L=Math.min(L,b.left); T=Math.min(T,b.top); R=Math.max(R,b.right); B=Math.max(B,b.bottom); }
-  return {L,T,R,B}; };
-for (const [w,h] of [[320,568],[375,720],[414,896],[768,900],[1280,720],[1600,900]]) {
-  dev.style.width = w+'px'; dev.style.height = h+'px';
-  await new Promise(r => setTimeout(r, 30));
-  const g = game.getBoundingClientRect();
-  for (const rec of m.CATALOG) {
-    if (rec.motion === 'sweep') continue;               // designed to leave the frame
-    for (const level of ['LIGHT','MEDIUM','HEAVY']) {
-      const hit = sfx.fire(rec, { level }); settle(hit.element);
-      const u = box(hit.element); n++;
-      const over = Math.max(0,g.left-u.L) + Math.max(0,u.R-g.right)
-                 + Math.max(0,g.top-u.T) + Math.max(0,u.B-g.bottom);
-      if (over > 2) out.push(`${w}px ${level} ${rec.word} by ${Math.round(over)}px`);
-      hit.remove();
-    }
-  }
-}
+for (const [w, h] of [[320,568],[375,720],[414,896],[768,900],[1280,720],[1600,900]])
+  for (const sc of [1, 0.6]) {
+    dev.style.width = w+'px'; dev.style.height = h+'px'; wrap.style.transform = 'scale('+sc+')';
+    await new Promise(r => setTimeout(r, 30));
+    const g = game.getBoundingClientRect();
+    for (const rec of m.CATALOG) {
+      if (rec.motion === 'sweep') continue;          // designed to leave the frame
+      for (const level of ['LIGHT','MEDIUM','HEAVY']) {
+        const hit = sfx.fire(rec, { level }); n++;
+        const o = worst(hit.element, g) / sc;
+        if (o > 2) out.push(`${w}px@${sc} ${level} ${rec.word} ${Math.round(o)}px`);
+        hit.remove(); } } }
 console.log(out.length ? 'OVERFLOW: ' + out.join(' | ') : `clean — ${n} cases`);
 ```
+
+Expected: `clean — 432 cases`.
 
 ## Fitting
 
 Effects are measured after layout and scaled down if they would overrun the reading area, so nothing clips at any width. Anything that already fits keeps its exact specified size — desktop output is unchanged.
 
-The measurement is the union of the glyph's painted rectangles, taken with the mount's transform cleared and *before* the entrance animation is attached. Both of those matter: each treatment transforms itself, and with `animation-fill-mode: both` an unstarted entrance is already showing its first keyframe, which for `slam` is `scale(2.7)`. The fit then allows for the tilt, `breathe` growth, and the fixed pixel displacement of `shake`, `split` and `vibe`.
+The standard is that nothing *legible* is clipped at any frame, not merely that the resting size fits. Four things the obvious implementation misses:
+
+1. **Measure the container the same way you measure the glyph.** `getBoundingClientRect` honours ancestor transforms and `clientWidth` does not; mixing them breaks the fit wherever anything is scaled, which is exactly what a device preview does.
+2. **Measure with the mount transform cleared and before the entrance is attached.** With `animation-fill-mode: both`, an unstarted `slam` already reports `scale(2.7)`.
+3. **Add the paint no geometry API reports.** The stroke and hard drop shadow fall outside the layout box and are worth about 29% of the font size.
+4. **Allow for the entrance overshoot** through the `PEAK` table, plus tilt, `breathe` growth, and the fixed pixel displacement of `shake`, `split` and `vibe`.
+
+`PEAK` holds the scale at which each motion becomes *legible*, not its raw maximum. `slam` opens at 2.7 but at zero opacity behind a 10px blur, so fitting its true peak would shrink explosions to nothing for an overshoot nobody sees; `crack` is opaque by 5% while still near 1.4, which is why it clipped.
 
 If you add a modifier that moves or grows the finished glyph, add it to `fitScale` or it will push the effect back over the edge. There is a coverage check for this in the verification section below.
