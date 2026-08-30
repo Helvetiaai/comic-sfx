@@ -2,9 +2,10 @@ node_modules/
 dist/
 .cache/
 
-# editor / OS noise
+# editor / OS / agent noise
 .vscode/
 .idea/
+.claude/
 .DS_Store
 Thumbs.db
 desktop.ini
