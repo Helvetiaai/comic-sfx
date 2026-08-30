@@ -6,6 +6,8 @@ Everything is real text in the DOM plus CSS keyframes. No canvas, no SVG animati
 
 Two files ship into your game. A browser-based workbench designs the sounds.
 
+**[Open the workbench →](https://helvetiaai.github.io/comic-sfx/)**
+
 ---
 
 ## Quick start
