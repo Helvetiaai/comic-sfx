@@ -170,9 +170,23 @@ Under `prefers-reduced-motion: reduce` the system collapses every entrance to a 
 
 If your game is played with a screen reader, announce effects through an `aria-live="polite"` region as well: the visual effect is otherwise the only signal.
 
+## Fitting
+
+Base sizes are absolute pixels because that is what the design specifies — a HEAVY effect is 168px. A 168px word does not fit a 375px phone, so every effect is measured once it is laid out and scaled down if it would run past the reading area. The tilt, the `breathe` growth and the pixel displacement from `shake`, `split` and `vibe` are all part of that calculation.
+
+Anything that already fits is left at its exact specified size, so nothing changes on desktop. `fire()` reports what happened:
+
+```js
+const hit = sfx.fire('KABOOM!');
+hit.size;      // 193 — the size the design asked for
+hit.rendered;  // 87  — what fitted on this screen
+hit.fit;       // 0.45 — 1 when nothing had to be given up
+```
+
+A word shrinking below roughly 70% is a writing signal rather than a bug: it means the word is too long to land at that intensity on that screen. The workbench surfaces this for the sound you are editing.
+
 ## Known limits
 
-- **Sizes are fixed pixels.** A HEAVY effect is 168px regardless of viewport, so large words clip on narrow screens. The workbench warns you when the current sound would run past the edges at the selected width. If you ship on mobile, scale the base sizes to the container.
 - Native engines (Unity, Godot, Unreal) need a real reimplementation — this renders through the DOM.
 - Requires `clip-path`, `-webkit-text-stroke` and `paint-order`: current Chrome, Firefox, Safari and Edge.
 

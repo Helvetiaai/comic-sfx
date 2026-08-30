@@ -148,7 +148,7 @@ function inkGlyph(word, size, r) {
 
 function burstGlyph(word, size) {
   const s = size * 0.44;
-  const wrap = el('div', { position: 'relative', padding: (s * 0.9) + 'px ' + (s * 1.2) + 'px' });
+  const wrap = el('div', { position: 'relative', width: 'max-content', padding: (s * 0.9) + 'px ' + (s * 1.2) + 'px' });
   wrap.appendChild(el('div', {
     position: 'absolute', inset: '0', background: COLORS.teal, clipPath: BURST_PTS,
     transform: 'translate(' + (s * 0.2) + 'px,' + (s * 0.17) + 'px)'
@@ -168,7 +168,7 @@ function shredGlyph(word, size) {
     fontFamily: "'Anton', sans-serif", fontSize: f + 'px', lineHeight: '1', letterSpacing: '.02em',
     transform: 'scaleY(1.35)', transformOrigin: '50% 50%', whiteSpace: 'nowrap'
   };
-  const wrap = el('div', { position: 'relative', transform: 'skewX(-14deg)' });
+  const wrap = el('div', { position: 'relative', width: 'max-content', transform: 'skewX(-14deg)' });
   wrap.appendChild(el('div', Object.assign({}, t, {
     position: 'absolute', left: (f * 0.2) + 'px', top: (f * 0.06) + 'px', color: COLORS.red
   }), word));
@@ -183,6 +183,60 @@ function glyphBase(word, dir, size, r) {
   if (dir === 'BURST') return burstGlyph(word, size);
   if (dir === 'SHRED') return shredGlyph(word, size);
   return inkGlyph(word, size, r);
+}
+
+/* ── fitting ──────────────────────────────────────────────────────────────
+ * Base sizes are absolute pixels because that is what the design specifies,
+ * but a 168px HEAVY word cannot fit a 375px phone panel. So the glyph is
+ * measured once it is laid out and the whole effect is scaled down if it
+ * would run past the reading area. Anything that already fits keeps its exact
+ * specified size, on every screen.
+ */
+const FIT_MARGIN = { LIGHT: 0.92, MEDIUM: 0.90, HEAVY: 0.94 };
+
+/* The painted box, not the layout box: each treatment transforms itself
+   (INK skews, SHRED skews and stretches) and offsets ghost copies, so the
+   only trustworthy number is the union of what is actually on screen. The
+   caller clears the mount transform first so this reads untilted. */
+function visualBox(node) {
+  const b = node.getBoundingClientRect();
+  let l = b.left, t = b.top, r = b.right, bot = b.bottom;
+  const kids = node.querySelectorAll('*');
+  for (let i = 0; i < kids.length; i++) {
+    const k = kids[i].getBoundingClientRect();
+    if (!k.width || !k.height) continue;
+    if (k.left < l) l = k.left;
+    if (k.top < t) t = k.top;
+    if (k.right > r) r = k.right;
+    if (k.bottom > bot) bot = k.bottom;
+  }
+  return { w: r - l, h: bot - t };
+}
+
+function fitScale(box, boxW, boxH, level, r, reduced, rot) {
+  if (!boxW || !boxH || !box.w || !box.h) return 1;
+  // `breathe` keeps growing through the hold, so allow for where it ends up
+  const grow = (r.breathe && !reduced) ? 1.07 : 1;
+  const w = box.w * grow, h = box.h * grow;
+
+  // a tilted box is wider than its own width
+  const rad = Math.abs(rot || 0) * Math.PI / 180;
+  const cos = Math.cos(rad), sin = Math.sin(rad);
+  const rw = w * cos + h * sin;
+  const rh = w * sin + h * cos;
+
+  // these modifiers displace the finished glyph by a fixed number of pixels
+  // *after* it is scaled, so they come off the box, not the multiplier
+  let px = 0, py = 0;
+  if (!reduced) {
+    if (r.shake) { px += 6; py += 4; }
+    if (r.split) { px += 8; py += 10; }
+    if (r.vibe)  { px += 2; py += 2; }
+  }
+  const m = FIT_MARGIN[level] || 0.9;
+  return Math.min(1,
+    Math.max(1, boxW * m - px * 2) / rw,
+    Math.max(1, boxH * m - py * 2) / rh);
 }
 
 /**
@@ -203,7 +257,7 @@ export function renderGlyph(word, dir, size, opts) {
    animate the halves apart. */
 function glyph(word, dir, size, r) {
   if (!r.split) return glyphBase(word, dir, size, r);
-  const wrap = el('div', { position: 'relative' });
+  const wrap = el('div', { position: 'relative', width: 'max-content' });
   const hidden = el('div', { visibility: 'hidden' });
   hidden.appendChild(glyphBase(word, dir, size, r));
   wrap.appendChild(hidden);
@@ -288,13 +342,17 @@ export class ComicSFX {
     const rot = level === 'HEAVY' ? -3 + Math.random() * 6 : -9 + Math.random() * 14;
 
     // innermost: the entrance, wrapped outward by each active modifier
-    let node = el('div', {
-      animation: p.out ? p.enter + ', ' + p.out : p.enter,
-      transformOrigin: '50% 50%'
-    });
-    node.appendChild(glyph(word, o.dir || r.dir, size, r));
+    const dir = o.dir || r.dir || 'INK';
+    // the entrance is attached after measuring: with fill-mode `both` it would
+    // otherwise already be showing its first keyframe (slam starts at 2.7x)
+    let node = el('div', { transformOrigin: '50% 50%', width: 'max-content' });
+    const art = glyph(word, dir, size, r);
+    node.appendChild(art);
 
-    const wrapIn = function (style) { const w = el('div', style); w.appendChild(node); node = w; };
+    const wrapIn = function (style) {
+      style.width = 'max-content';
+      const w = el('div', style); w.appendChild(node); node = w;
+    };
     if (r.breathe && !reduced) wrapIn({ animation: 'omBreathe ' + (p.dur + p.hold) + 'ms ease-out both' });
     if (r.vibe && !reduced) wrapIn({ animation: 'omVibe 90ms steps(2) infinite' });
     if (r.shake && level !== 'LIGHT' && !reduced) {
@@ -324,6 +382,16 @@ export class ComicSFX {
     mount.appendChild(node);
     this.layer.appendChild(mount);
 
+    /* Measure untilted, fit, then tilt and start the entrance — all
+       synchronously, before the browser paints, so there is no visible pop. */
+    mount.style.transform = 'none';
+    const fit = fitScale(visualBox(art), this.root.clientWidth, this.root.clientHeight,
+                         level, r, reduced, rot);
+    mount.style.transform = fit < 1
+      ? pos.transform + ' scale(' + fit.toFixed(4) + ')'
+      : pos.transform;
+    node.style.animation = p.out ? p.enter + ', ' + p.out : p.enter;
+
     // environment
     if (level !== 'LIGHT') { this.loud++; this.dim.style.opacity = '1'; }
     if (level === 'HEAVY' && !reduced) {
@@ -352,7 +420,13 @@ export class ComicSFX {
     this.timers.push(timer);
     // keep the list from growing without bound across a long session
     if (this.timers.length > 60) this.timers = this.timers.slice(-30);
-    return { element: mount, remove: function () { clearTimeout(timer); done(); } };
+    return {
+      element: mount,
+      size: size,                          // the size the design asked for
+      rendered: Math.round(size * fit),    // what fitted on this screen
+      fit: fit,                            // 1 when nothing had to be given up
+      remove: function () { clearTimeout(timer); done(); }
+    };
   }
 
   /** Remove every live effect and the overlay itself. Safe to call twice. */

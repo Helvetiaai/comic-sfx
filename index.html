@@ -668,20 +668,34 @@ function renderReadout(){
   const t = timing(r);
   const f = $('readoutFacts');
   f.textContent = '';
+  const sizeFact = el('span', null, px + 'px tall');
+  sizeFact.id = 'factSize';
   f.append(
-    el('span', null, px + 'px tall'),
+    sizeFact,
     el('span', null, r.motion === 'sweep'
       ? (t.dur / 1000).toFixed(2) + 's pass-through'
       : ((t.dur + t.hold) / 1000).toFixed(2) + 's on screen')
   );
+  paintFit();
+}
 
-  // honest warning: sizes are fixed pixels, so a big word clips on a small screen
-  const w = DEVICES[device].w;
-  const est = px * Math.max(2.2, (r.word || '').length * 0.62);
-  const notice = $('clipNotice');
-  if (est > w - 30){
+/* The library scales an effect down when it would overrun the reading area.
+   Report what actually landed, and speak up only when a word is losing so
+   much size that it stops carrying weight — that is a writing decision. */
+let lastHit = null;
+
+function paintFit(){
+  const notice = $('clipNotice'), sizeFact = $('factSize');
+  if (!lastHit || !sizeFact) return;
+  if (lastHit.fit >= 0.995){
+    sizeFact.textContent = lastHit.size + 'px tall';
+    notice.hidden = true;
+    return;
+  }
+  sizeFact.textContent = lastHit.size + 'px, fitted to ' + lastHit.rendered + 'px';
+  if (lastHit.fit < 0.7){
     $('clipText').textContent =
-      `At ${w}px wide this runs past both edges. Sizes are fixed pixels, so the same word is fine on desktop and clipped on a phone — worth deciding before the game ships on mobile.`;
+      `Fits, but only by shrinking to ${Math.round(lastHit.fit * 100)}% of its designed size at ${DEVICES[device].w}px. A shorter word, or a lighter level, would land harder on a screen this narrow.`;
     notice.hidden = false;
   } else notice.hidden = true;
 }
@@ -758,7 +772,8 @@ function fire(){
   const lines = gameText.querySelectorAll('p');
   const anchor = (r.level || 'MEDIUM') === 'LIGHT' && lines.length
     ? lines[Math.floor(Math.random() * lines.length)] : null;
-  sfx.fire(r, { anchor });          // the library takes the live record directly
+  lastHit = sfx.fire(r, { anchor });   // the library takes the live record directly
+  paintFit();
   $('sfxLive').textContent = r.word || '';
 }
 
@@ -802,7 +817,7 @@ $('fHold').addEventListener('input', e => {
 $('fHold').addEventListener('change', fire);
 
 document.querySelectorAll('[data-device]').forEach(b =>
-  b.addEventListener('click', () => { device = b.dataset.device; layout(); renderReadout(); save(); }));
+  b.addEventListener('click', () => { device = b.dataset.device; layout(); save(); fire(); }));
 
 $('btnFire').addEventListener('click', fire);
 

@@ -55,6 +55,8 @@ This is the part that matters most: **intensity governs how much the effect is a
 
 Each catalog entry multiplies base size by `size` and hold by `hold`. Rotation is randomised per fire: ±3° at HEAVY, −9° to +5° otherwise.
 
+The sizes above are what an effect gets whenever the reading area has room for it. Where it does not — a 168px HEAVY word in a 375px phone panel — the effect is measured after layout and scaled down to fit rather than clipped. Desktop output is unaffected. See **Fitting** in [README.md](README.md).
+
 Budget guidance for the writers: HEAVY two or three times per chapter at most. It stops meaning anything if it is common.
 
 ### Motions
