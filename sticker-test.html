@@ -31,6 +31,7 @@
   <div class="bar">
     <button id="fire">Fire all</button>
     <button id="pose">Freeze at rest</button>
+    <button id="style">Style: pop</button>
   </div>
   <div class="grid" id="grid"></div>
 
@@ -57,12 +58,18 @@ for (const rec of PACK_1){
   }
 }
 
+let style = 'pop';
 function fireAll(){
   for (const r of rigs){
     r.sfx.layer.querySelectorAll(':scope > div').forEach(n => { if (n !== r.sfx.dim) n.remove(); });
-    r.sfx.fire(r.rec, {});
+    r.sfx.fire(r.rec, { style });
   }
 }
+document.getElementById('style').onclick = (e) => {
+  style = style === 'pop' ? 'noir' : 'pop';
+  e.target.textContent = 'Style: ' + style;
+  fireAll(); setTimeout(pose, 40);
+};
 /* animations are throttled in a background tab, so hold each one at its
    resting frame: finish the entrance, rewind the exit */
 function pose(){

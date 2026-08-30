@@ -20,8 +20,11 @@ export const PACK_1 = [
   { word: 'YIKES!', says: 'awkward',
     dir: 'INK',   motion: 'squeeze', level: 'MEDIUM', size: 0.95, vibe: true },
 
+  /* the one cold sticker in the set, so the pack is not eight yellows.
+     Electric cyan rather than the game's muted teal, which reads as dull
+     next to the primaries. */
   { word: 'ZAP!',   says: 'done, and fast',
-    dir: 'INK',   motion: 'buzz',    level: 'MEDIUM', size: 1,    tint: '#00A6A6', vibe: true },
+    dir: 'INK',   motion: 'buzz',    level: 'MEDIUM', size: 1,    tint: '#3ACBF0', vibe: true },
 
   { word: 'ARGH!',  says: 'frustration',
     dir: 'SHRED', motion: 'stretch', level: 'MEDIUM', size: 1,    vibe: true },

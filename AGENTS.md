@@ -37,6 +37,8 @@ Intensity is a *disruption* contract, not a size setting. LIGHT must not move an
 
 **Change lettering** — the three `*Glyph()` functions in `comic-sfx.js`. All sizes derive from the effect's font size; there is no spacing scale.
 
+**Add a style** — one object in `STYLES`. Colour belongs there, never in a glyph function. `noir` is the default and must stay pixel-identical, since a shipped game depends on it; add new looks alongside it rather than editing it. An outline on the burst is a `scale`d plate behind the fill, because `clip-path` cannot be stroked; a second outline on letters is a stacked copy, because `-webkit-text-stroke` draws one ring.
+
 **Stagger** (`stagger` on a catalog entry) renders a word as parts arriving in turn. Two things about it are deliberate. Offsets are margins, not transforms, because margins take part in layout — the cluster then measures and centres correctly and the fit sees its true size, whereas a transform would leave the container reporting one part's box. And the entrance animation goes on each part's own inner element, while the exit is shared so they leave together.
 
 ## Rules

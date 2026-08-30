@@ -20,6 +20,50 @@ export const COLORS = {
   ink:  '#0A0A09'    // outline / hard shadow
 };
 
+/* ── STYLES ──────────────────────────────────────────────────────────────────
+ * A style is the ink: which plates the burst is printed from, how the letters
+ * are filled and outlined, what the ghost copy behind speed lettering is.
+ * Nothing about timing, motion or intensity lives here.
+ *
+ * `noir` is the original and stays the default, so an existing game's look
+ * does not move. `pop` is the loud primary-coloured version people picture
+ * when they hear "comic book sound effect".
+ *
+ * Plates are drawn back to front. `scale` grows a plate concentrically, which
+ * is how an outline is made — clip-path has no stroke of its own. `dx`/`dy`
+ * offset a plate instead, which is how a misregistered print is made.
+ * Both are in units of the burst's inner font size.
+ */
+export const STYLES = {
+  noir: {
+    plates: [
+      { fill: '#00A6A6', dx: 0.20, dy: 0.17 },   // the misregistered teal plate
+      { fill: '#E8482C' }
+    ],
+    burstText: { fill: '#F4EFE6', stroke: '#0A0A09', strokeW: 0.10 },
+    inkText:   { fill: '#F4EFE6', stroke: '#0A0A09', strokeW: 0.055,
+                 shadow: '#E8482C', shadowFlat: '#0A0A09' },
+    shred:     { ghost: '#E8482C', fill: '#F4EFE6', stroke: '#0A0A09', strokeW: 0.08 },
+    halftone:  null
+  },
+
+  pop: {
+    plates: [
+      { fill: '#0A0A09', scale: 1.13 },          // heavy black outline
+      { fill: '#E52521', scale: 1.055 },         // a red ring inside it
+      { fill: '#FFD629' }                        // yellow ground
+    ],
+    burstText: { fill: '#E52521', stroke: '#0A0A09', strokeW: 0.085,
+                 outline: { color: '#FFFFFF', w: 0.20 } },
+    inkText:   { fill: '#FFD629', stroke: '#0A0A09', strokeW: 0.062,
+                 shadow: '#E52521', shadowFlat: '#0A0A09',
+                 outline: { color: '#FFFFFF', w: 0.13 } },
+    shred:     { ghost: '#1D5FD0', fill: '#FFD629', stroke: '#0A0A09', strokeW: 0.085,
+                 outline: { color: '#FFFFFF', w: 0.16 } },
+    halftone:  { color: 'rgba(10,10,9,.22)', step: 0.16 }
+  }
+};
+
 /* ── THE CATALOG ─────────────────────────────────────────────────────────────
  * One entry per sound. Everything about a word lives here.
  *   word    the literal text, punctuation included
@@ -124,65 +168,126 @@ function prefersReduced() {
 
 /* ── lettering ───────────────────────────────────────────────────────────── */
 
-function inkGlyph(word, size, r) {
+/* A second outline needs a second copy of the text: -webkit-text-stroke draws
+   one ring, so the outer ring is a copy sitting exactly behind with a thicker
+   stroke and no fill of its own showing. Styles without `outline` get one
+   element, exactly as before. */
+function strokedText(word, style, spec, unit, host) {
+  if (spec.outline) {
+    const back = el('div', Object.assign({}, style, {
+      position: 'absolute', left: '0', top: '0',
+      color: spec.outline.color,
+      WebkitTextStroke: Math.max(2, unit * spec.outline.w) + 'px ' + spec.outline.color,
+      paintOrder: 'stroke fill', textShadow: 'none'
+    }), word);
+    host.appendChild(back);
+  }
+  const front = el('div', Object.assign({}, style, {
+    position: spec.outline ? 'relative' : (style.position || 'static'),
+    color: spec.fill,
+    WebkitTextStroke: Math.max(2, unit * spec.strokeW) + 'px ' + spec.stroke,
+    paintOrder: 'stroke fill'
+  }), word);
+  host.appendChild(front);
+  return front;
+}
+
+function inkGlyph(word, size, r, st) {
   // note: `split` is handled generically in glyph(), not here — it wraps the
   // finished glyph of any treatment.
+  const spec = st.inkText;
   const o = Math.max(3, size * 0.09);
-  const base = {
-    fontFamily: "'Passion One', sans-serif",
+  const face = {
+    fontFamily: (st.fonts && st.fonts.ink) || "'Passion One', sans-serif",
     fontWeight: '900',
     fontSize: size + 'px',
     lineHeight: '.9',
-    color: r.tint || COLORS.bone,
-    WebkitTextStroke: Math.max(2, size * 0.055) + 'px ' + COLORS.ink,
-    paintOrder: 'stroke fill',
-    textShadow: r.flat
-      ? o + 'px ' + o + 'px 0 ' + COLORS.ink
-      : o + 'px ' + o + 'px 0 ' + COLORS.red + ', ' + (o * 2) + 'px ' + (o * 2) + 'px 0 ' + COLORS.ink,
-    transform: 'skewX(-8deg)',
-    whiteSpace: 'nowrap',
-    opacity: r.faint ? '.7' : '1'
+    whiteSpace: 'nowrap'
   };
-  return el('div', base, word);
-}
+  const shadow = r.flat
+    ? o + 'px ' + o + 'px 0 ' + spec.shadowFlat
+    : o + 'px ' + o + 'px 0 ' + spec.shadow + ', ' + (o * 2) + 'px ' + (o * 2) + 'px 0 ' + spec.shadowFlat;
 
-function burstGlyph(word, size) {
-  const s = size * 0.44;
-  const wrap = el('div', { position: 'relative', width: 'max-content', padding: (s * 0.9) + 'px ' + (s * 1.2) + 'px' });
-  wrap.appendChild(el('div', {
-    position: 'absolute', inset: '0', background: COLORS.teal, clipPath: BURST_PTS,
-    transform: 'translate(' + (s * 0.2) + 'px,' + (s * 0.17) + 'px)'
-  }));
-  wrap.appendChild(el('div', { position: 'absolute', inset: '0', background: COLORS.red, clipPath: BURST_PTS }));
-  wrap.appendChild(el('div', {
-    position: 'relative', fontFamily: "'Rubik Mono One', sans-serif", fontSize: s + 'px', lineHeight: '1',
-    color: COLORS.bone, WebkitTextStroke: Math.max(2, s * 0.1) + 'px ' + COLORS.ink,
-    paintOrder: 'stroke fill', whiteSpace: 'nowrap'
-  }, word.replace(/[!.\u2026]/g, '')));
+  // one element when there is no second outline, so nothing changes for noir
+  if (!spec.outline) {
+    return el('div', Object.assign({}, face, {
+      color: r.tint || spec.fill,
+      WebkitTextStroke: Math.max(2, size * spec.strokeW) + 'px ' + spec.stroke,
+      paintOrder: 'stroke fill',
+      textShadow: shadow,
+      transform: 'skewX(-8deg)',
+      width: 'max-content',
+      opacity: r.faint ? '.7' : '1'
+    }), word);
+  }
+  const wrap = el('div', {
+    position: 'relative', width: 'max-content',
+    transform: 'skewX(-8deg)', textShadow: shadow,
+    opacity: r.faint ? '.7' : '1'
+  });
+  strokedText(word, face, Object.assign({}, spec, { fill: r.tint || spec.fill }), size, wrap);
   return wrap;
 }
 
-function shredGlyph(word, size) {
+function burstGlyph(word, size, st) {
+  const s = size * 0.44;
+  const wrap = el('div', { position: 'relative', width: 'max-content', padding: (s * 0.9) + 'px ' + (s * 1.2) + 'px' });
+
+  // plates, back to front: `scale` makes an outline, `dx`/`dy` a misregistration
+  st.plates.forEach(function (plate) {
+    const t = [];
+    if (plate.dx || plate.dy) t.push('translate(' + (s * (plate.dx || 0)) + 'px,' + (s * (plate.dy || 0)) + 'px)');
+    if (plate.scale) t.push('scale(' + plate.scale + ')');
+    wrap.appendChild(el('div', {
+      position: 'absolute', inset: '0', background: plate.fill, clipPath: BURST_PTS,
+      transform: t.join(' ') || 'none'
+    }));
+  });
+
+  if (st.halftone) {
+    const d = Math.max(3, s * st.halftone.step);
+    wrap.appendChild(el('div', {
+      position: 'absolute', inset: '0', clipPath: BURST_PTS, pointerEvents: 'none',
+      background: 'radial-gradient(circle at ' + (d * 0.3) + 'px ' + (d * 0.3) + 'px, ' +
+                  st.halftone.color + ' ' + (d * 0.2) + 'px, transparent ' + (d * 0.26) + 'px) 0 0/' +
+                  d + 'px ' + d + 'px'
+    }));
+  }
+
+  const host = el('div', { position: 'relative', width: 'max-content' });
+  strokedText(word.replace(/[!.\u2026]/g, ''), {
+    fontFamily: (st.fonts && st.fonts.burst) || "'Rubik Mono One', sans-serif",
+    fontSize: s + 'px', lineHeight: '1', whiteSpace: 'nowrap'
+  }, st.burstText, s, host);
+  wrap.appendChild(host);
+  return wrap;
+}
+
+function shredGlyph(word, size, st) {
+  const spec = st.shred;
   const f = size * 0.66;
   const t = {
-    fontFamily: "'Anton', sans-serif", fontSize: f + 'px', lineHeight: '1', letterSpacing: '.02em',
+    fontFamily: (st.fonts && st.fonts.shred) || "'Anton', sans-serif",
+    fontSize: f + 'px', lineHeight: '1', letterSpacing: '.02em',
     transform: 'scaleY(1.35)', transformOrigin: '50% 50%', whiteSpace: 'nowrap'
   };
   const wrap = el('div', { position: 'relative', width: 'max-content', transform: 'skewX(-14deg)' });
   wrap.appendChild(el('div', Object.assign({}, t, {
-    position: 'absolute', left: (f * 0.2) + 'px', top: (f * 0.06) + 'px', color: COLORS.red
+    position: 'absolute', left: (f * 0.2) + 'px', top: (f * 0.06) + 'px', color: spec.ghost
   }), word));
-  wrap.appendChild(el('div', Object.assign({}, t, {
-    position: 'relative', color: COLORS.bone,
-    WebkitTextStroke: Math.max(2, f * 0.08) + 'px ' + COLORS.ink, paintOrder: 'stroke fill'
-  }), word));
+  const host = el('div', { position: 'relative', width: 'max-content' });
+  strokedText(word, t, spec, f, host);
+  wrap.appendChild(host);
   return wrap;
 }
 
-function glyphBase(word, dir, size, r) {
-  if (dir === 'BURST') return burstGlyph(word, size);
-  if (dir === 'SHRED') return shredGlyph(word, size);
-  return inkGlyph(word, size, r);
+function styleOf(name) { return STYLES[name] || STYLES.noir; }
+
+function glyphBase(word, dir, size, r, st) {
+  st = st || styleOf(r && r.style);
+  if (dir === 'BURST') return burstGlyph(word, size, st);
+  if (dir === 'SHRED') return shredGlyph(word, size, st);
+  return inkGlyph(word, size, r, st);
 }
 
 /* ── fitting ──────────────────────────────────────────────────────────────
@@ -272,24 +377,25 @@ function fitScale(box, boxW, boxH, level, r, reduced, rot, size) {
  * @returns {HTMLElement}
  */
 export function renderGlyph(word, dir, size, opts) {
-  return glyphBase(word, dir, size, opts || {});
+  opts = opts || {};
+  return glyphBase(word, dir, size, opts, styleOf(opts.style));
 }
 
 /* split works on any treatment: build the finished glyph three times — one
    hidden copy holding the layout, two clipped along a ragged tear — and
    animate the halves apart. */
-function glyph(word, dir, size, r) {
-  if (!r.split) return glyphBase(word, dir, size, r);
+function glyph(word, dir, size, r, st) {
+  if (!r.split) return glyphBase(word, dir, size, r, st);
   const wrap = el('div', { position: 'relative', width: 'max-content' });
   const hidden = el('div', { visibility: 'hidden' });
-  hidden.appendChild(glyphBase(word, dir, size, r));
+  hidden.appendChild(glyphBase(word, dir, size, r, st));
   wrap.appendChild(hidden);
   const half = function (clip, anim) {
     const n = el('div', {
       position: 'absolute', left: '0', top: '0', clipPath: clip,
       animation: anim + ' 300ms cubic-bezier(.2,.85,.3,1) 70ms both'
     });
-    n.appendChild(glyphBase(word, dir, size, r));
+    n.appendChild(glyphBase(word, dir, size, r, st));
     return n;
   };
   wrap.appendChild(half('polygon(0 0,100% 0,100% 44%,71% 55%,37% 43%,0 53%)', 'omSplitA'));
@@ -338,7 +444,7 @@ function plan(r, level, exit, reduced, extra) {
  * layout, so the cluster measures and centres correctly and the fit sees its
  * true size. A transform would leave the container reporting one part's box.
  */
-function staggerArt(word, dir, size, r) {
+function staggerArt(word, dir, size, r, st) {
   const s = r.stagger || {};
   const parts = s.parts || String(word).split(' ');
   const step = s.dx != null ? s.dx : 0.12;
@@ -352,7 +458,7 @@ function staggerArt(word, dir, size, r) {
       marginLeft: (i ? Math.round(step * size) : 0) + 'px'
     });
     const inner = el('div', { transformOrigin: '50% 50%', width: 'max-content' });
-    inner.appendChild(glyph(text, dir, Math.round(size * Math.pow(grow, i)), r));
+    inner.appendChild(glyph(text, dir, Math.round(size * Math.pow(grow, i)), r, st));
     cell.appendChild(inner);
     wrap.appendChild(cell);
     targets.push(inner);
@@ -372,7 +478,7 @@ export class ComicSFX {
    */
   constructor(container, opts) {
     this.root = container;
-    this.opts = Object.assign({ shakeTarget: null, exit: 'SNAP', zIndex: 5 }, opts || {});
+    this.opts = Object.assign({ shakeTarget: null, exit: 'SNAP', zIndex: 5, style: 'noir' }, opts || {});
     if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
 
     this.layer = el('div', {
@@ -407,6 +513,7 @@ export class ComicSFX {
     const size = Math.round(SIZE[level] * (r.size || 1));
     const rot = level === 'HEAVY' ? -3 + Math.random() * 6 : -9 + Math.random() * 14;
     const dir = o.dir || r.dir || 'INK';
+    const st = styleOf(o.style || r.style || this.opts.style);
 
     /* innermost: the entrance, wrapped outward by each active modifier.
        `entrance` is held separately from `node` because wrapIn reassigns node
@@ -417,15 +524,15 @@ export class ComicSFX {
     let targets = [entrance];
     let step = 0;
     if (r.stagger && !reduced) {
-      const built = staggerArt(word, dir, size, r);
+      const built = staggerArt(word, dir, size, r, st);
       entrance.appendChild(built.art);
       targets = built.targets;
       step = r.stagger.step != null ? r.stagger.step : 170;
     } else if (r.stagger) {
       // reduced motion: the parts still render, they just all arrive at once
-      entrance.appendChild(staggerArt(word, dir, size, r).art);
+      entrance.appendChild(staggerArt(word, dir, size, r, st).art);
     } else {
-      entrance.appendChild(glyph(word, dir, size, r));
+      entrance.appendChild(glyph(word, dir, size, r, st));
     }
     const p = plan(r, level, exit, reduced, step * (targets.length - 1));
     const art = entrance;

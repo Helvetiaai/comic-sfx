@@ -164,6 +164,20 @@ Builds the lettering as a detached element without animating or mounting it — 
 
 `size` and `hold` multiply the intensity's base size and duration. Flags: `shake` (`'med'` / `'hard'`), `split` (tears the word in half), `vibe` (trembles while on screen), `breathe` (keeps growing through the hold), `flat` (single black shadow instead of the red double), `tint` (overrides the bone fill), `faint` (70% opacity), `exit`.
 
+### Styles
+
+A style is the ink — which plates the burst is printed from, how letters are filled and outlined, what colour the ghost behind speed lettering is. Nothing about timing or motion lives there.
+
+```js
+new ComicSFX(el, { style: 'pop' });   // whole overlay
+sfx.fire('POW!', { style: 'pop' });   // one effect
+{ word: 'POW!', dir: 'BURST', style: 'pop' }   // one catalog entry
+```
+
+Two ship. **`noir`** is the default and the original: a red plate with a misregistered teal one behind it, bone letters, restrained — built for a grounded crime story. **`pop`** is the loud primary version people picture when they hear "comic book sound effect": a yellow burst inside a red ring inside a heavy black outline, red letters with a white ring, halftone dots.
+
+Adding a style is one object in `STYLES`. Plates are drawn back to front, where `scale` grows a plate concentrically to make an outline — `clip-path` has no stroke of its own — and `dx`/`dy` offset one to make a misregistered print instead.
+
 ### Stagger
 
 `stagger` renders a word as several parts that arrive one after another — three Z's drifting up, PEW PEW landing twice, HA HA HA:
