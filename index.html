@@ -123,31 +123,34 @@ a{color:var(--red)}
   color:var(--ink-soft); font-weight:600;
   padding:0 4px 7px; margin-bottom:4px; border-bottom:1px solid var(--rule);
 }
-.group-rows{display:flex;flex-direction:column}
-.sound-row{
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-  width:100%; text-align:left; border:0; background:none; cursor:pointer;
-  padding:8px 10px; border-left:2px solid transparent; color:var(--ink-soft);
-  transition:color .1s,background .1s;
+/* cards, not rows: fourteen of these wrap into three or four lines instead of
+   fourteen, which is what makes the stacked layout usable on a narrow screen */
+.group-rows{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:5px}
+.sound-card{
+  position:relative; overflow:hidden;
+  text-align:left; cursor:pointer; color:var(--ink-soft);
+  background:var(--raise); border:1px solid transparent;
+  padding:9px 10px 11px;
+  transition:color .1s,background .1s,border-color .1s;
 }
-.sound-row:hover{background:var(--sel);color:var(--ink)}
-.sound-row[aria-current="true"]{background:var(--sel);border-left-color:var(--red);color:var(--red)}
+.sound-card:hover{color:var(--ink);border-color:var(--rule-hard)}
+.sound-card[aria-current="true"]{color:var(--red);border-color:var(--red);background:var(--sel)}
 /* the index is a list to scan, not a showcase — a display face this small
    turns to mush on Windows, so the lettering lives where it is large */
 .sound-word{
-  font-weight:600; font-size:13px; line-height:1.2; letter-spacing:.07em;
-  text-transform:uppercase;
+  display:block; font-weight:600; font-size:11.5px; line-height:1.25;
+  letter-spacing:.04em; text-transform:uppercase;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
-/* intensity reads as bar height, so the list scans without labels */
-.lvl{display:inline-flex;align-items:flex-end;gap:2px;height:12px;flex:0 0 auto}
-.lvl i{width:3px;background:currentColor;display:block;opacity:.5}
-.lvl i:nth-child(1){height:4px}
-.lvl i:nth-child(2){height:8px}
-.lvl i:nth-child(3){height:12px}
-.lvl[data-l="LIGHT"] i:nth-child(n+2){opacity:.15}
-.lvl[data-l="MEDIUM"] i:nth-child(n+3){opacity:.15}
-.sound-row[aria-current="true"] .lvl i{opacity:1}
+/* intensity as the width of the card's bottom edge — no label, no space cost */
+.sound-card::after{
+  content:""; position:absolute; left:0; bottom:0; height:2px;
+  background:currentColor; opacity:.45;
+}
+.sound-card[data-l="LIGHT"]::after{width:28%}
+.sound-card[data-l="MEDIUM"]::after{width:62%}
+.sound-card[data-l="HEAVY"]::after{width:100%}
+.sound-card[aria-current="true"]::after{opacity:1}
 .index-foot{padding:12px 14px 18px;border-top:1px solid var(--rule)}
 .index-foot .btn{width:100%}
 
@@ -305,13 +308,15 @@ a{color:var(--red)}
 .boot-error pre{background:var(--game-bg);border:1px solid var(--game-edge);padding:12px;overflow:auto;font-size:12px;margin:0}
 
 @media (max-width:1240px){ .workbench{grid-template-columns:210px minmax(0,1fr) 310px} }
+/* stacked: the sounds sit above the preview as a compact block of cards, the
+   inspector below it. Each group becomes its own column while there is room. */
 @media (max-width:1000px){
   body{height:auto}
   .workbench{grid-template-columns:1fr}
   .rail-left,.rail-right{border:0;border-bottom:1px solid var(--rule)}
   .rail-left{order:1}.stage{order:2}.rail-right{order:3}
-  .index{flex-direction:row;flex-wrap:wrap;gap:20px}
-  .group{flex:1 1 160px}
+  .index{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px 22px;align-items:start}
+  .index-foot .btn{width:auto;min-width:210px}   /* not a full-width slab */
   .stage-view{min-height:56vh}
 }
 @media (prefers-reduced-motion: reduce){
@@ -591,14 +596,15 @@ function renderIndex(){
     const rows = el('div', 'group-rows');
     for (const i of buckets.get(g)){
       const r = catalog[i];
-      const b = el('button', 'sound-row');
+      const word = r.word || '—', level = (r.level || 'MEDIUM').toLowerCase();
+      const b = el('button', 'sound-card');
       b.type = 'button';
+      b.dataset.l = r.level || 'MEDIUM';
       b.setAttribute('aria-current', String(i === selected));
-      const lvl = el('span', 'lvl');
-      lvl.dataset.l = r.level || 'MEDIUM';
-      lvl.title = (r.level || 'MEDIUM').toLowerCase() + ' intensity';
-      lvl.append(el('i'), el('i'), el('i'));
-      b.append(el('span', 'sound-word', r.word || '—'), lvl);
+      // the edge bar carries the intensity visually; name it for screen readers
+      b.setAttribute('aria-label', `${word} — ${level} intensity`);
+      b.title = `${word} — ${level}`;
+      b.append(el('span', 'sound-word', word));
       b.onclick = () => { selected = i; renderIndex(); renderInspector(); save(); fire(); };
       rows.appendChild(b);
     }
