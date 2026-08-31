@@ -43,6 +43,8 @@ Intensity is a *disruption* contract, not a size setting. LIGHT must not move an
 
 **Stagger** (`stagger` on a catalog entry) renders a word as parts arriving in turn. Two things about it are deliberate. Offsets are margins, not transforms, because margins take part in layout — the cluster then measures and centres correctly and the fit sees its true size, whereas a transform would leave the container reporting one part's box. And the entrance animation goes on each part's own inner element, while the exit is shared so they leave together.
 
+**Screen effects** (`screen`) let the word act on the darkened sheet instead of sitting in front of it. A screen effect replaces the shared dim for that one fire — the shared dim is reference-counted across overlapping effects, and a cut sheet is a moment, not a state — so both the increment and the decrement are skipped.
+
 ## Rules
 
 1. **Never duplicate the engine.** The workbench previously inlined its own copy of the catalog and keyframes and it drifted. `index.html` imports from `./comic-sfx.js` and links `./comic-sfx.css`. Keep it that way.
@@ -50,7 +52,8 @@ Intensity is a *disruption* contract, not a size setting. LIGHT must not move an
 3. **Track every timer** on `this.timers` so `destroy()` can clear it.
 4. **The keyframes and the `CATALOG` shape are the design.** Restructure the code freely; do not quietly retune durations, easings or colours.
 5. **No new runtime dependencies.** That constraint is the point of the library. `render/` is the one place dependencies live, it is a development tool, and nothing in `comic-sfx.js` may import from it.
-6. **Keep `seed` honest.** Anything that consumes randomness must go through the seeded source in `fire()`, or exports stop being reproducible.
+6. **Anything that steps animations by hand must clear `timers` first.** Wall-clock time keeps running while the animation is frozen, so the runtime tears the effect down mid-capture and the tail comes out blank. This silently corrupted a whole exported pack before it was caught.
+7. **Keep `seed` honest.** Anything that consumes randomness must go through the seeded source in `fire()`, or exports stop being reproducible.
 
 ## Verifying a change
 

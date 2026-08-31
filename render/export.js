@@ -125,6 +125,13 @@ async function setup(page, rec, style, seed, w, h, env) {
     window.__sfx = new mod.ComicSFX(stage, { env: !!env, seed, style });
     const hit = window.__sfx.fire(rec, {});
 
+    /* Wall-clock time keeps running while we step the animation by hand, and
+       each frame costs a screenshot round-trip. The runtime's own cleanup
+       timers would therefore tear the effect down mid-capture and leave the
+       tail of the sequence blank. During export we own the timeline. */
+    window.__sfx.timers.forEach(clearTimeout);
+    window.__sfx.timers.length = 0;
+
     const anims = [];
     for (const el of [hit.element, ...hit.element.querySelectorAll('*')])
       for (const a of el.getAnimations()) anims.push(a);

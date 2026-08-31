@@ -152,3 +152,28 @@
 
 /* wash — halftone blowout behind a HEAVY hit */
 @keyframes omWash { 0% { opacity: 0 } 8% { opacity: .85 } 100% { opacity: 0 } }
+
+/* ── screen effects ───────────────────────────────────────────────────────
+   The dim stops being a flat sheet the word sits on top of, and becomes
+   something the word acts on. A slice cuts it in two along the blade's path
+   and the halves fall apart, revealing what is behind. */
+
+/* the darkened sheet arriving */
+@keyframes omDimIn { from { opacity: 0 } to { opacity: 1 } }
+
+/* the two halves parting, perpendicular to the cut */
+@keyframes omSliceA {
+  0%   { transform: translate(0,0) rotate(0) }
+  100% { transform: translate(-1.4%,-7%) rotate(-1.1deg) }
+}
+@keyframes omSliceB {
+  0%   { transform: translate(0,0) rotate(0) }
+  100% { transform: translate(1.4%,7%) rotate(1.1deg) }
+}
+
+/* the cut itself: a bright line drawn along the blade's path, once */
+@keyframes omSliceFlash {
+  0%   { opacity: 0; transform: scaleX(.15) }
+  20%  { opacity: 1; transform: scaleX(1) }
+  100% { opacity: 0; transform: scaleX(1) }
+}

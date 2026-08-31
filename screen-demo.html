@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Screen effects — the word cuts the screen</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Passion+One:wght@900&family=Rubik+Mono+One&family=Anton&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="./comic-sfx.css">
+<style>
+:root{
+  --bg:#0A0A0A; --panel:#141414; --raise:#1C1C1C;
+  --ink:#F2F2F2; --soft:#B4B4B4; --faint:#949494;
+  --rule:#262626; --rule-hard:#3B3B3B; --red:#F0573A;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13.5px;line-height:1.65;padding:24px;
+}
+h1{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin:0 0 6px;font-weight:600}
+p.note{font-size:12.5px;color:var(--soft);margin:0 0 20px;max-width:78ch;line-height:1.7}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:22px}
+button{
+  font:inherit;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;
+  background:var(--raise);color:var(--ink);border:1px solid var(--rule-hard);padding:8px 14px;cursor:pointer;
+}
+button:hover{border-color:var(--red);color:var(--red)}
+label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+input[type=range]{accent-color:var(--red);width:140px}
+output{font-size:12px;font-variant-numeric:tabular-nums;min-width:44px}
+
+.row{display:flex;gap:22px;flex-wrap:wrap}
+figure{margin:0;display:flex;flex-direction:column;gap:6px}
+figcaption{font-size:11px;color:var(--faint);letter-spacing:.06em}
+/* the chat behind the effect, so you can see what the cut reveals */
+.screen{
+  width:480px;height:480px;position:relative;overflow:hidden;
+  border:1px solid var(--rule-hard);
+  display:flex;flex-direction:column;justify-content:flex-end;gap:9px;padding:16px;
+  font-family:-apple-system,'Segoe UI',system-ui,sans-serif;
+}
+.screen.light{background:#8CA9C5}
+.screen.dark{background:#0E0E10}
+.msg{padding:9px 13px;border-radius:18px;font-size:14px;max-width:80%}
+.light .msg.in{background:#fff;color:#111;align-self:flex-start}
+.light .msg.out{background:#8DE055;color:#111;align-self:flex-end}
+.dark .msg.in{background:#2A2A2E;color:#F2F2F2;align-self:flex-start}
+.dark .msg.out{background:#2E5B2B;color:#EAF7E6;align-self:flex-end}
+</style>
+</head>
+<body>
+
+<h1>The word acts on the screen</h1>
+<p class="note">A slice cuts the darkened sheet along the blade's path and lets the halves fall apart, revealing the chat behind. The cut is timed to the moment the word crosses the frame, so the blade appears to do the cutting rather than the sheet simply opening.</p>
+
+<div class="bar">
+  <button id="fire">Slash</button>
+  <button id="loop">Auto: on</button>
+  <label for="at">Cut timing</label>
+  <input type="range" id="at" min="0.2" max="0.8" step="0.05" value="0.45"><output id="atOut">0.45</output>
+  <label for="angle">Cut angle</label>
+  <input type="range" id="angle" min="0" max="0.4" step="0.02" value="0.14"><output id="angOut">0.14</output>
+  <label for="open">Fall apart</label>
+  <input type="range" id="open" min="200" max="1200" step="50" value="520"><output id="openOut">520ms</output>
+</div>
+
+<div class="row">
+  <figure>
+    <figcaption>Light chat</figcaption>
+    <div class="screen light" id="s1">
+      <div class="msg in">so did you settle it</div>
+      <div class="msg out">i settled it</div>
+      <div class="msg in">how</div>
+    </div>
+  </figure>
+  <figure>
+    <figcaption>Dark chat</figcaption>
+    <div class="screen dark" id="s2">
+      <div class="msg in">so did you settle it</div>
+      <div class="msg out">i settled it</div>
+      <div class="msg in">how</div>
+    </div>
+  </figure>
+</div>
+
+<script type="module">
+import { ComicSFX } from './comic-sfx.js';
+
+/* A katana is not an impact — it is a pass-through that leaves damage.
+   SHRED lettering, sweep motion, and the screen effect does the rest. */
+const SLASH = {
+  word: 'SHNKK!', dir: 'SHRED', motion: 'sweep', level: 'HEAVY',
+  size: 0.68, style: 'pop',
+  screen: { type: 'slice', at: 0.45, angle: 0.14, open: 520 }
+};
+
+const rigs = ['s1', 's2'].map(id =>
+  new ComicSFX(document.getElementById(id), { env: true, style: 'pop', seed: 'demo' }));
+
+const read = () => ({
+  at: +document.getElementById('at').value,
+  angle: +document.getElementById('angle').value,
+  open: +document.getElementById('open').value
+});
+
+function fire(){
+  const s = read();
+  const rec = Object.assign({}, SLASH, { screen: Object.assign({ type: 'slice' }, s) });
+  for (const r of rigs) r.fire(rec, {});
+}
+
+for (const [id, out, fmt] of [['at','atOut',v=>v],['angle','angOut',v=>v],['open','openOut',v=>v+'ms']])
+  document.getElementById(id).addEventListener('input', e => {
+    document.getElementById(out).textContent = fmt(e.target.value);
+  });
+
+document.getElementById('fire').onclick = fire;
+
+let loop = setInterval(fire, 3200);
+document.getElementById('loop').onclick = (e) => {
+  if (loop) { clearInterval(loop); loop = null; e.target.textContent = 'Auto: off'; }
+  else { loop = setInterval(fire, 3200); e.target.textContent = 'Auto: on'; }
+};
+window.stopLoop = () => { clearInterval(loop); loop = null; };
+window.fire = fire; window.rigs = rigs; window.SLASH = SLASH;
+
+await document.fonts.ready;
+fire();
+</script>
+</body>
+</html>

@@ -619,9 +619,60 @@ export class ComicSFX {
       t.style.animation = p.out ? enter + ', ' + p.out : enter;
     });
 
+    /* ── screen effects ────────────────────────────────────────────────────
+       A screen effect makes the darkened sheet something the word acts on
+       rather than sits on. `slice` cuts it along the blade's path and lets the
+       halves fall apart. It replaces the shared dim for this one fire — the
+       shared dim is reference-counted across overlapping effects, and a cut
+       sheet is a single moment, not a state. */
+    const screen = (this.opts.env && !reduced && r.screen && level !== 'LIGHT')
+      ? (typeof r.screen === 'string' ? { type: r.screen } : r.screen)
+      : null;
+
+    if (screen && screen.type === 'slice') {
+      const W = this.root.clientWidth || 1, H = this.root.clientHeight || 1;
+      const tilt = screen.angle != null ? screen.angle : 0.14;   // rise across the frame
+      const at = Math.round(p.dur * (screen.at != null ? screen.at : 0.45));
+      const open = screen.open != null ? screen.open : 520;
+      const top = 50 - tilt * 50, bot = 50 + tilt * 50;
+      const ease = 'cubic-bezier(.2,.9,.25,1)';
+
+      const sheet = el('div', {
+        position: 'absolute', inset: '0', overflow: 'hidden', pointerEvents: 'none',
+        animation: 'omDimIn 140ms linear both'
+      });
+      const face = { position: 'absolute', inset: '0', background: 'rgba(11,10,9,.62)' };
+      sheet.appendChild(el('div', Object.assign({}, face, {
+        clipPath: 'polygon(0 0,100% 0,100% ' + top + '%,0 ' + bot + '%)',
+        animation: 'omSliceA ' + open + 'ms ' + ease + ' ' + at + 'ms both'
+      })));
+      sheet.appendChild(el('div', Object.assign({}, face, {
+        clipPath: 'polygon(0 ' + bot + '%,100% ' + top + '%,100% 100%,0 100%)',
+        animation: 'omSliceB ' + open + 'ms ' + ease + ' ' + at + 'ms both'
+      })));
+
+      // the cut: a bright line along the blade's path, rotated to match it
+      const deg = -Math.atan(((bot - top) / 100 * H) / W) * 180 / Math.PI;
+      const rail = el('div', {
+        position: 'absolute', left: '-6%', right: '-6%', top: '50%',
+        transform: 'rotate(' + deg.toFixed(2) + 'deg)', transformOrigin: '50% 50%'
+      });
+      rail.appendChild(el('div', {
+        height: '2px', background: 'linear-gradient(90deg,transparent,' + COLORS.bone + ',transparent)',
+        animation: 'omSliceFlash 320ms ease-out ' + at + 'ms both'
+      }));
+      sheet.appendChild(rail);
+
+      this.layer.insertBefore(sheet, this.layer.firstChild);
+      this.timers.push(setTimeout(function () { sheet.remove(); }, p.life));
+    }
+
     // environment
-    if (level !== 'LIGHT' && this.dim) { this.loud++; this.dim.style.opacity = '1'; }
-    if (level === 'HEAVY' && !reduced && this.opts.env) {
+    if (level !== 'LIGHT' && this.dim && !screen) { this.loud++; this.dim.style.opacity = '1'; }
+    /* The halftone wash and a screen effect are two ways of saying the same
+       thing — the screen itself is affected — and together they fight. A cut
+       sheet reads better on its own, so the wash stands down for it. */
+    if (level === 'HEAVY' && !reduced && this.opts.env && !screen) {
       const wash = el('div', {
         position: 'absolute', inset: '0', pointerEvents: 'none',
         background: 'radial-gradient(circle at 1.5px 1.5px, ' + COLORS.red + ' 1.5px, transparent 1.8px) 0 0/7px 7px',
@@ -641,7 +692,7 @@ export class ComicSFX {
     const done = function () {
       if (!mount.isConnected) return;
       mount.remove();
-      if (level !== 'LIGHT' && self.dim && --self.loud <= 0) { self.loud = 0; self.dim.style.opacity = '0'; }
+      if (level !== 'LIGHT' && self.dim && !screen && --self.loud <= 0) { self.loud = 0; self.dim.style.opacity = '0'; }
     };
     const timer = setTimeout(done, p.life);
     this.timers.push(timer);

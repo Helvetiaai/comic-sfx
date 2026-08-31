@@ -181,6 +181,19 @@ Two ship. **`noir`** is the default and the original: a red plate with a misregi
 
 Adding a style is one object in `STYLES`. Plates are drawn back to front, where `scale` grows a plate concentrically to make an outline — `clip-path` has no stroke of its own — and `dx`/`dy` offset one to make a misregistered print instead.
 
+### Screen effects
+
+`screen` makes the darkened sheet something the word acts on, rather than something it sits in front of. `slice` cuts it along the blade's path and lets the halves fall apart, revealing what is behind:
+
+```js
+{ word: 'SHNKK!', dir: 'SHRED', motion: 'sweep', level: 'HEAVY',
+  screen: { type: 'slice', at: 0.45, angle: 0.14, open: 520 } }
+```
+
+`at` is when the cut happens as a fraction of the entrance — tuned so the blade appears to do the cutting rather than the sheet simply opening. `angle` is how far the cut rises across the frame, and `open` is how long the halves take to part.
+
+It needs `env: true` and an intensity above LIGHT, since it replaces the dim for that fire. The halftone wash stands down while a screen effect runs: both say "the screen itself is affected", and together they fight.
+
 ### Stagger
 
 `stagger` renders a word as several parts that arrive one after another — three Z's drifting up, PEW PEW landing twice, HA HA HA:
