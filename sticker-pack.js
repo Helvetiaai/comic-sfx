@@ -39,6 +39,39 @@ export const PACK_1 = [
 
   { word: 'HUH?',   says: 'confused',
     dir: 'INK',   motion: 'pop',     level: 'MEDIUM', size: 1, tint: '#3ACBF0' }
+,
+
+  /* ── the everyday half ────────────────────────────────────────────────────
+     The first eight are all reactions. These are the things people actually
+     send most: courtesies and greetings. Every one maps onto a tag without
+     stretching, which is how the pack gets found. */
+
+  { word: 'THANKS!', says: 'thank you',
+    dir: 'INK',   motion: 'pop',     level: 'MEDIUM', size: 1.15 },
+
+  { word: 'SORRY!', says: 'apology',
+    dir: 'INK',   motion: 'drop',    level: 'MEDIUM', size: 1.1 },
+
+  { word: 'OK!',    says: 'agreed, got it',
+    dir: 'BURST', motion: 'slam',    level: 'MEDIUM', size: 1,    shake: 'med' },
+
+  { word: 'HERE!',  says: 'present, I am here',
+    dir: 'INK',   motion: 'crack',   level: 'MEDIUM', size: 1,    shake: 'med' },
+
+  /* 5 is ha in Thai, so 5555 is how Thailand laughs. Staggered like the
+     laugh it is — flat rather than rising, so it reads apart from HAHAHA. */
+  { word: '5555',   says: 'laughing (Thai)',
+    dir: 'INK',   motion: 'pop',     level: 'MEDIUM', size: 1.1,
+    stagger: { parts: ['5', '5', '5', '5'], step: 75, dx: 0.08, dy: 0, scale: 1.05 } },
+
+  { word: 'WOW!',   says: 'amazed',
+    dir: 'SHRED', motion: 'stretch', level: 'MEDIUM', size: 1.05 },
+
+  { word: 'YAY!',   says: 'celebrate, hooray',
+    dir: 'INK',   motion: 'pop',     level: 'MEDIUM', size: 1.05, tint: '#3ACBF0' },
+
+  { word: 'BYE!',   says: 'goodbye',
+    dir: 'SHRED', motion: 'squeeze', level: 'MEDIUM', size: 1.05 }
 ];
 
 /* Held for pack 2 — deliberately a different register (modern, gaming,
