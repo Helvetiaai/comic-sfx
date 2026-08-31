@@ -175,6 +175,26 @@ const seek = (page, t) => page.evaluate((t) => {
   }
 }, t);
 
+/* APNG stores its loop count in the acTL chunk, and UPNG always writes 0,
+   which means loop forever. LINE requires 1-4. Patch the field in place and
+   fix the chunk CRC — re-encoding just to change one integer would be silly. */
+function crc32(buf) {
+  let c, crc = 0xFFFFFFFF;
+  for (let i = 0; i < buf.length; i++) {
+    c = (crc ^ buf[i]) & 0xFF;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+    crc = c ^ (crc >>> 8);
+  }
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+function setLoops(buf, loops) {
+  const at = buf.indexOf(Buffer.from('acTL'));
+  if (at < 0) return buf;
+  buf.writeUInt32BE(loops, at + 8);                       // num_plays follows num_frames
+  buf.writeUInt32BE(crc32(buf.slice(at, at + 12)), at + 12);
+  return buf;
+}
+
 /* Lossless first; quantise only as far as the size limit demands. */
 function encodeAPNG(pngs, w, h, delays, maxBytes) {
   const rgba = pngs.map(buf => UPNG.toRGBA8(UPNG.decode(buf))[0]);
@@ -266,14 +286,24 @@ async function main() {
 
       const delays = times.map((t, i) =>
         Math.max(20, Math.round(i < times.length - 1 ? times[i + 1] - t : 260)));
-      const total = delays.reduce((a, b) => a + b, 0);
+
+      /* LINE will only accept a playback time of a whole number of seconds.
+         Round up and give the remainder to the final frame, which is the
+         static hold — stretching that reads as the word resting a moment
+         longer, whereas scaling every delay would distort the motion. */
+      const natural = delays.reduce((a, b) => a + b, 0);
+      const total = Math.min(T.maxMs, Math.max(1000, Math.ceil(natural / 1000) * 1000));
+      delays[delays.length - 1] += total - natural;
+
+      const loops = Math.max(1, Math.min(4, Math.floor(T.maxMs / total)));
       const enc = encodeAPNG(pngs, spec.w, spec.h, delays, T.maxBytes);
+      setLoops(enc.buf, loops);
 
       fs.writeFileSync(path.join(outDir, job.file), enc.buf);
       results.push({
         label: job.label, file: job.file, size: spec.w + '×' + spec.h,
-        frames: times.length, ms: total, kb: Math.round(enc.buf.length / 1024),
-        colours: enc.colours,
+        frames: times.length, ms: total, loops: loops,
+        kb: Math.round(enc.buf.length / 1024), colours: enc.colours,
         ok: enc.buf.length <= T.maxBytes && times.length >= T.minFrames
             && times.length <= T.maxFrames && total <= T.maxMs
       });
@@ -313,10 +343,10 @@ ${cells}
 
   const pad = (s, n) => String(s).padEnd(n);
   console.log('\n' + pad('', 16) + pad('file', 12) + pad('size', 10) + pad('frames', 8) +
-              pad('length', 9) + pad('weight', 9) + pad('colours', 10) + 'within limits');
+              pad('length', 9) + pad('loops', 7) + pad('weight', 9) + pad('colours', 10) + 'within limits');
   for (const r of results) {
     console.log(pad(r.label, 16) + pad(r.file, 12) + pad(r.size, 10) + pad(r.frames, 8) +
-                pad(r.ms ? r.ms + 'ms' : '—', 9) + pad(r.kb + 'KB', 9) +
+                pad(r.ms ? (r.ms/1000) + 's' : '—', 9) + pad(r.loops || '—', 7) + pad(r.kb + 'KB', 9) +
                 pad(r.colours, 10) + (r.ok ? 'yes' : 'NO'));
   }
   const bad = results.filter(r => !r.ok);
