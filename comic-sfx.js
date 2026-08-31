@@ -249,7 +249,7 @@ function inkGlyph(word, size, r, st) {
   return wrap;
 }
 
-function burstGlyph(word, size, st) {
+function burstGlyph(word, size, st, r) {
   const s = size * 0.44;
   const wrap = el('div', { position: 'relative', width: 'max-content', padding: (s * 0.9) + 'px ' + (s * 1.2) + 'px' });
 
@@ -278,13 +278,14 @@ function burstGlyph(word, size, st) {
   strokedText(word.replace(/[!.\u2026]/g, ''), {
     fontFamily: (st.fonts && st.fonts.burst) || "'Rubik Mono One', sans-serif",
     fontSize: s + 'px', lineHeight: '1', whiteSpace: 'nowrap'
-  }, st.burstText, s, host);
+  }, (r && r.tint) ? Object.assign({}, st.burstText, { fill: r.tint }) : st.burstText, s, host);
   wrap.appendChild(host);
   return wrap;
 }
 
-function shredGlyph(word, size, st) {
-  const spec = st.shred;
+function shredGlyph(word, size, st, r) {
+  /* tint means the letter fill, whichever treatment is drawing them */
+  const spec = (r && r.tint) ? Object.assign({}, st.shred, { fill: r.tint }) : st.shred;
   const f = size * 0.66;
   const t = {
     fontFamily: (st.fonts && st.fonts.shred) || "'Anton', sans-serif",
@@ -305,8 +306,8 @@ function styleOf(name) { return STYLES[name] || STYLES.noir; }
 
 function glyphBase(word, dir, size, r, st) {
   st = st || styleOf(r && r.style);
-  if (dir === 'BURST') return burstGlyph(word, size, st);
-  if (dir === 'SHRED') return shredGlyph(word, size, st);
+  if (dir === 'BURST') return burstGlyph(word, size, st, r);
+  if (dir === 'SHRED') return shredGlyph(word, size, st, r);
   return inkGlyph(word, size, r, st);
 }
 
