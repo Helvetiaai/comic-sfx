@@ -26,7 +26,7 @@ export const PACK_1 = [
      Three beats rather than one word, so it lands like actual laughter. */
   { word: 'HAHAHA!', says: 'laughing',
     dir: 'INK',   motion: 'pop',     level: 'MEDIUM', size: 0.95,
-    stagger: { parts: ['HA', 'HA', 'HA'], step: 130, dx: 0.13, dy: 0.16, scale: 1.1 } },
+    stagger: { parts: ['HA', 'HA', 'HA'], step: 90, dx: 0.13, dy: 0.16, scale: 1.1 } },
 
   { word: 'ARGH!',  says: 'frustration',
     dir: 'SHRED', motion: 'stretch', level: 'MEDIUM', size: 1,    vibe: true },

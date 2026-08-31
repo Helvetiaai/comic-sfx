@@ -146,24 +146,38 @@ async function setup(page, rec, style, seed, w, h, env) {
       return Math.max(m, d);
     }, 0);
 
-    // effective opacity has to be read up the chain: it lives on the animated
-    // wrapper, so a child reports 1 while being invisible
+    /* Effective opacity has to be read up the chain — it lives on the
+       animated wrapper, so a child reports 1 while being invisible. */
     const opacityAt = (t) => {
       for (const a of anims) a.currentTime = isExit(a) ? 0 : t;
       let best = 0;
       for (const el of hit.element.querySelectorAll('*')) {
         const b = el.getBoundingClientRect();
         if (!b.width || !b.height) continue;
-        let op = 1, n = el;
-        while (n && n !== hit.element.parentElement) { op *= +getComputedStyle(n).opacity; n = n.parentElement; }
+        let op = 1, p = el;
+        while (p && p !== hit.element.parentElement) { op *= +getComputedStyle(p).opacity; p = p.parentElement; }
         if (op > best) best = op;
       }
       return best;
     };
+
+    /* The first frame where the lettering is actually opaque. Every entrance
+       begins fully transparent, and the store shows frame one as the still. */
     let start = 0;
-    for (let t = 0; t <= dur; t += Math.max(4, dur / 40)) {
+    for (let t = 0; t <= dur; t += Math.max(4, dur / 60)) {
       if (opacityAt(t) >= 0.85) { start = t; break; }
     }
+
+    /* A staggered word arrives in beats, so that moment only covers its first
+       part — the store image would show one HA landed and the rest in flight.
+       Every part runs the same entrance, so the whole cluster is formed one
+       full stagger later. */
+    if (rec.stagger) {
+      const parts = (rec.stagger.parts || String(rec.word || '').split(' ')).length;
+      const step = rec.stagger.step != null ? rec.stagger.step : 170;
+      start = Math.min(dur, start + step * (parts - 1));
+    }
+
     return { dur, start };
   }, rec, style, seed, w, h, env);
 }
