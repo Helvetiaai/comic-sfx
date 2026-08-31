@@ -1,53 +1,57 @@
 # Tag sheet — pack 1
 
-LINE allows **up to 9 tags per sticker**, and they are what put a sticker in
-the suggestion menu when someone types a matching word. Synonyms matter more
-than precision: LINE's own guidance is that an "OK!" sticker should carry OK,
-YES, Understood, Acknowledged and Sure, not just OK.
+Every tag below is taken from LINE's actual sticker tag vocabulary (608 tags
+across 9 categories), so these can be selected as-is rather than approximated.
 
-The picker offers a fixed vocabulary organised by category (Conversation,
-Expression, Emotion, Season, Event, Animal) and is searchable. The lists below
-are *intents* — match each to the nearest tag the picker actually offers, and
-drop any with no close equivalent rather than forcing one.
+LINE allows **up to 9 tags per sticker**. They are what put a sticker in the
+suggestion menu when someone types a matching word, so synonyms matter more
+than precision — LINE's own guidance is that an "OK!" sticker should carry OK,
+YES, Understood and Sure, not just OK.
 
-**Do not pad.** Tags unrelated to the sticker can fail review.
+Order matches the pack, which is grouped by colour family, so the three bursts
+lead and are what the store preview shows.
 
-Order matches the pack, which is grouped by colour family — the three bursts
-lead, so they are what the store preview shows.
+| # | Sticker | Tags |
+|---|---|---|
+| 1 | BOOM! | Success · Awesome · well done · Number one · Pride · wonderful · Nice · good · Explosion |
+| 2 | YES! | Yes · Affirmative · of course · Exactly · right · true · certain · agree · good |
+| 3 | OK! | OK · got it · alright · No problem · I see · done · Gotcha · 承知 (understood) |
+| 4 | THANKS! | Thanks · 感謝 (gratitude) · 助かる (that helps, thanks) · Applause · Aww · Happy · Nice |
+| 5 | WOW! | Wow · Surprised · Awesome · OMG · Shock · Fascinating · wonderful · Stunned · なんと (amazingly) |
+| 6 | HAHAHA! | Haha · Laughter · lol · Hilarity · Chortle · Snicker · Grin · Hehe · ハハハ (hahaha) |
+| 7 | 5555 | lol · Laughter · Fun · Hilarity · Snicker · Grin · Joke · Haha · 吹く (burst out laughing) |
+| 8 | OUCH! | 辛い（つらい）(painful, tough) · D'oh · Darn it · bad · Failure · Shock · とほほ (oh dear) · Sad · Crisis |
+| 9 | ARGH! | Frustration · Irritation · Irritating · Infuriating · Angry · Ugh · Darn it · いらいら (irritated) · むかつく (pissed off) |
+| 10 | YIKES! | Yikes · awkward · 引く (cringe) · しらける (mood killed) · Sheesh · しまった (oops) · 恥ずかしい (embarrassing) · Worried · be careful |
+| 11 | SORRY! | Sorry · Apologizing · ごめんなさい (I'm sorry) · 申し訳ない (I'm terribly sorry) · Regret · Regreting · Bowing · Kowtow · humble |
+| 12 | HERE! | attendance · arrive · Standing by · now · here you are? · ただいま (I'm home) · I got this · Affirmative |
+| 13 | BRUV | hey · yoo-hoo · What's up? · Hello · สวัสดี (hello) · Contact · Call · How are you? |
+| 14 | BYE! | Bye · See ya · さようなら (goodbye) · またね (see you) · 안녕 (hi/bye) · going home · clocking out · いってきます (I'm off) |
+| 15 | HUH? | what? · ? · idk · Hmm · Why? · really? · はぁ？ (huh?) · キョトン (blank stare) · Confounded |
+| 16 | ZZZ… | Sleepy · Asleep · Bored · Yawning · Going to bed · Good night · Resting · Low energy · すやすや (sleeping soundly) |
 
-| # | Sticker | Family | Tags |
-|---|---|---|---|
-| 1 | BOOM! | yellow | awesome · amazing · great · well done · success · congratulations · perfect · excellent · nailed it |
-| 2 | YES! | yellow | yes · yeah · agree · correct · right · absolutely · definitely · exactly · of course |
-| 3 | OK! | yellow | ok · okay · sure · understood · got it · alright · roger · fine · no problem |
-| 4 | THANKS! | yellow | thanks · thank you · grateful · thankful · appreciate · cheers · ty |
-| 5 | WOW! | yellow | wow · amazing · incredible · impressive · surprised · whoa · unbelievable · awesome |
-| 6 | HAHAHA! | yellow | laugh · laughing · funny · lol · haha · hilarious · joke · amused |
-| 7 | 5555 | yellow | 555 · laugh · laughing · funny · lol · haha · hilarious · amused |
-| 8 | OUCH! | red | ouch · pain · hurt · painful · ow · sore · that hurts · injured |
-| 9 | ARGH! | red | frustrated · annoyed · angry · ugh · irritated · mad · grr · argh |
-| 10 | YIKES! | red | awkward · oops · uh oh · embarrassed · cringe · uncomfortable · yikes |
-| 11 | SORRY! | red | sorry · apology · apologise · my bad · forgive me · excuse me · my fault |
-| 12 | HERE! | cyan | here · present · I'm here · arrived · over here · available · on it |
-| 13 | BRUV | cyan | bro · mate · friend · buddy · dude · hey · pal |
-| 14 | BYE! | cyan | bye · goodbye · see you · farewell · later · bye bye · take care |
-| 15 | HUH? | cyan | confused · what · huh · question · don't understand · puzzled · pardon |
-| 16 | ZZZ… | cyan | sleepy · tired · bored · boring · asleep · sleep · good night · yawn |
+## What the vocabulary told us
 
-YES! and OK! sit close together, so their tags are deliberately split: YES!
-answers a question, OK! acknowledges an instruction. Giving them the same tags
-would just make them compete for the same suggestions.
+**Three of my earlier suggestions don't exist.** There is no "ouch", no
+"pain", no "555". OUCH! has to lean on 辛い（つらい）, D'oh and Darn it — the
+tag list is built around Japanese chat habits, and English exclamations are
+thinly covered.
 
-## Why this matters more than it looks
+**Tags are deliberately not shared between close pairs.** YES! and OK! could
+carry the same words but then they would compete for the same suggestions;
+YES! answers a question, OK! acknowledges an instruction. Same for HAHAHA! and
+5555.
 
-Tags are the discovery mechanism. Someone types "thanks" and your sticker
-appears as a candidate above their keyboard — they never searched a store, and
-tapping a suggested sticker takes them to the purchase screen. That is the
-whole route from nothing to a sale for a creator with no audience.
+**Non-English tags are worth taking.** The vocabulary is heavily Japanese with
+Thai, Korean and Chinese entries throughout, and they trigger for people typing
+in those languages — a larger audience than the English tags reach.
 
-It also compounds with two settings already switched on: trial use, which lets
-people send suggested stickers without owning them, and Stickers Premium after
-180 days, where revenue is a function of how many people send the sticker.
-Both are driven by suggestions, and suggestions are driven by tags.
+**For pack two:** the vocabulary has whole categories we ignore entirely —
+Spring, Summer, Autumn, Winter, New Year, Animals. It carries Songkran and
+สวัสดีปีใหม่ไทย (Happy Thai New Year), which is a seasonal pack aimed straight
+at the market you are targeting.
 
-Tags can be edited after a pack is on sale; the change goes through review.
+---
+
+*The export you saved is in `out/line/line-tags/`, which is gitignored — worth
+knowing, because its source URL contains your Creators Market account ID.*
