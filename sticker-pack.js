@@ -14,19 +14,19 @@ export const PACK_1 = [
   { word: 'POW!',   says: 'burn, take that',
     dir: 'BURST', motion: 'slam',    level: 'MEDIUM', size: 1,    shake: 'med' },
 
-  { word: 'OOF!',   says: 'that hurt, cringe',
-    dir: 'INK',   motion: 'drop',    level: 'MEDIUM', size: 1.05, shake: 'med' },
+  { word: 'OUCH!',  says: 'ouch, that hurt',
+    dir: 'INK',   motion: 'drop',    level: 'MEDIUM', size: 1,    shake: 'med' },
 
   /* six letters, so it renders narrower than the rest at the same size —
      bumped until it carries the same weight as the bursts */
   { word: 'YIKES!', says: 'awkward',
     dir: 'INK',   motion: 'squeeze', level: 'MEDIUM', size: 1.2, vibe: true },
 
-  /* the one cold sticker in the set, so the pack is not eight yellows.
-     Electric cyan rather than the game's muted teal, which reads as dull
-     next to the primaries. */
-  { word: 'ZAP!',   says: 'done, and fast',
-    dir: 'INK',   motion: 'buzz',    level: 'MEDIUM', size: 1,    tint: '#3ACBF0', vibe: true },
+  /* laughing is the highest-frequency thing missing from a reaction pack.
+     Three beats rather than one word, so it lands like actual laughter. */
+  { word: 'HAHAHA!', says: 'laughing',
+    dir: 'INK',   motion: 'pop',     level: 'MEDIUM', size: 0.95,
+    stagger: { parts: ['HA', 'HA', 'HA'], step: 130, dx: 0.13, dy: 0.16, scale: 1.1 } },
 
   { word: 'ARGH!',  says: 'frustration',
     dir: 'SHRED', motion: 'stretch', level: 'MEDIUM', size: 1,    vibe: true },
@@ -38,7 +38,7 @@ export const PACK_1 = [
     stagger: { parts: ['Z', 'Z', 'Z'], step: 190, dx: 0.1, dy: 0.4, scale: 1.18 } },
 
   { word: 'HUH?',   says: 'confused',
-    dir: 'INK',   motion: 'pop',     level: 'MEDIUM', size: 1 }
+    dir: 'INK',   motion: 'pop',     level: 'MEDIUM', size: 1, tint: '#3ACBF0' }
 ];
 
 /* Held for pack 2 — deliberately a different register (modern, gaming,
