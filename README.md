@@ -190,7 +190,9 @@ Adding a style is one object in `STYLES`. Plates are drawn back to front, where 
   screen: { type: 'slice', at: 0.45, angle: 0.14, open: 520 } }
 ```
 
-`at` is when the cut happens as a fraction of the entrance — tuned so the blade appears to do the cutting rather than the sheet simply opening. `angle` is how far the cut rises across the frame, and `open` is how long the halves take to part.
+`at` is when the cut happens as a fraction of the entrance — tuned so the blade appears to do the cutting rather than the sheet simply opening. `angle` is how far the cut rises across the frame, `open` is how long the pieces take to fall, `ragged` is how torn the edge is, and `spray` is how many specks are thrown off the wound (`sprayColor` overrides their colour, which otherwise follows the style).
+
+Four things make it read as cut material rather than two rectangles sliding apart. The edge is ragged, built from one shared list of jittered points so the sheet stays seamless until it parts. A tapered blade streak draws itself along the cut and fades from the tail. The lower piece falls further and turns more than the upper one peels back, so it carries weight. And spray is thrown perpendicular to the cut. All of it is seeded, so an export is reproducible.
 
 It needs `env: true` and an intensity above LIGHT, since it replaces the dim for that fire. The halftone wash stands down while a screen effect runs: both say "the screen itself is affected", and together they fight.
 

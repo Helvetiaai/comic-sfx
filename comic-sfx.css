@@ -161,19 +161,29 @@
 /* the darkened sheet arriving */
 @keyframes omDimIn { from { opacity: 0 } to { opacity: 1 } }
 
-/* the two halves parting, perpendicular to the cut */
+/* the two pieces falling away from the cut. Not a symmetrical slide: the
+   upper piece peels back, the lower one drops further and turns more, so it
+   reads as weight rather than as two rectangles moving apart. */
 @keyframes omSliceA {
   0%   { transform: translate(0,0) rotate(0) }
-  100% { transform: translate(-1.4%,-7%) rotate(-1.1deg) }
+  100% { transform: translate(-3%,-13%) rotate(-2.4deg) }
 }
 @keyframes omSliceB {
   0%   { transform: translate(0,0) rotate(0) }
-  100% { transform: translate(1.4%,7%) rotate(1.1deg) }
+  100% { transform: translate(3%,18%) rotate(3deg) }
 }
 
-/* the cut itself: a bright line drawn along the blade's path, once */
-@keyframes omSliceFlash {
-  0%   { opacity: 0; transform: scaleX(.15) }
-  20%  { opacity: 1; transform: scaleX(1) }
-  100% { opacity: 0; transform: scaleX(1) }
+/* the blade: a tapered streak that draws itself along the cut, then fades
+   from the tail. Wiped in with scaleX so the leading edge travels. */
+@keyframes omBlade {
+  0%   { transform: scaleX(0); opacity: 1 }
+  38%  { transform: scaleX(1); opacity: 1 }
+  100% { transform: scaleX(1); opacity: 0 }
+}
+
+/* spray thrown off the wound. Direction is per-speck, set inline. */
+@keyframes omSpeck {
+  0%   { transform: translate(0,0) scale(1); opacity: 1 }
+  55%  { opacity: 1 }
+  100% { transform: translate(var(--dx,0px), var(--dy,0px)) scale(.35); opacity: 0 }
 }

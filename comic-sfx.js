@@ -633,35 +633,77 @@ export class ComicSFX {
       const W = this.root.clientWidth || 1, H = this.root.clientHeight || 1;
       const tilt = screen.angle != null ? screen.angle : 0.14;   // rise across the frame
       const at = Math.round(p.dur * (screen.at != null ? screen.at : 0.45));
-      const open = screen.open != null ? screen.open : 520;
-      const top = 50 - tilt * 50, bot = 50 + tilt * 50;
-      const ease = 'cubic-bezier(.2,.9,.25,1)';
+      const open = screen.open != null ? screen.open : 620;
+      const deg = -Math.atan((tilt * H) / W) * 180 / Math.PI;
+
+      /* The cut is ragged, not ruled. Both halves are built from the same
+         list of points, so the sheet is seamless until it parts — a straight
+         edge reads as two rectangles sliding, this reads as torn material. */
+      const N = 19, ragged = screen.ragged != null ? screen.ragged : 2.1;
+      const pts = [];
+      for (let i = 0; i <= N; i++) {
+        const x = (i / N) * 100;
+        const y = 50 + tilt * 50 - (x / 100) * tilt * 100;
+        pts.push([x, y + (i === 0 || i === N ? 0 : (rnd() - 0.5) * 2 * ragged)]);
+      }
+      const fmt = function (p) { return p[0].toFixed(2) + '% ' + p[1].toFixed(2) + '%'; };
+      const above = 'polygon(0 0,100% 0,' + pts.slice().reverse().map(fmt).join(',') + ')';
+      const below = 'polygon(' + pts.map(fmt).join(',') + ',100% 100%,0 100%)';
 
       const sheet = el('div', {
         position: 'absolute', inset: '0', overflow: 'hidden', pointerEvents: 'none',
         animation: 'omDimIn 140ms linear both'
       });
       const face = { position: 'absolute', inset: '0', background: 'rgba(11,10,9,.62)' };
+      const fall = 'cubic-bezier(.3,.08,.62,1)';
       sheet.appendChild(el('div', Object.assign({}, face, {
-        clipPath: 'polygon(0 0,100% 0,100% ' + top + '%,0 ' + bot + '%)',
-        animation: 'omSliceA ' + open + 'ms ' + ease + ' ' + at + 'ms both'
+        clipPath: above, animation: 'omSliceA ' + open + 'ms ' + fall + ' ' + at + 'ms both'
       })));
       sheet.appendChild(el('div', Object.assign({}, face, {
-        clipPath: 'polygon(0 ' + bot + '%,100% ' + top + '%,100% 100%,0 100%)',
-        animation: 'omSliceB ' + open + 'ms ' + ease + ' ' + at + 'ms both'
+        clipPath: below, animation: 'omSliceB ' + open + 'ms ' + fall + ' ' + at + 'ms both'
       })));
 
-      // the cut: a bright line along the blade's path, rotated to match it
-      const deg = -Math.atan(((bot - top) / 100 * H) / W) * 180 / Math.PI;
+      // the blade: a tapered streak drawn along the cut
+      const thick = Math.max(4, H * 0.055);
       const rail = el('div', {
-        position: 'absolute', left: '-6%', right: '-6%', top: '50%',
+        position: 'absolute', left: '-15%', right: '-15%', top: '50%',
+        height: thick + 'px', marginTop: (-thick / 2) + 'px',
         transform: 'rotate(' + deg.toFixed(2) + 'deg)', transformOrigin: '50% 50%'
       });
       rail.appendChild(el('div', {
-        height: '2px', background: 'linear-gradient(90deg,transparent,' + COLORS.bone + ',transparent)',
-        animation: 'omSliceFlash 320ms ease-out ' + at + 'ms both'
+        height: '100%', borderRadius: '50%', transformOrigin: '0% 50%',
+        background: 'linear-gradient(90deg,transparent 0%,rgba(255,255,255,.45) 14%,' +
+                    '#FFFFFF 42%,#FFFFFF 58%,rgba(255,255,255,.5) 78%,transparent 100%)',
+        boxShadow: '0 0 ' + Math.round(thick * 1.6) + 'px rgba(255,255,255,.75)',
+        animation: 'omBlade ' + Math.round(open * 0.72) + 'ms cubic-bezier(.15,.85,.3,1) ' +
+                    Math.max(0, at - 60) + 'ms both'
       }));
       sheet.appendChild(rail);
+
+      /* spray thrown off the wound, along the cut and outward from it */
+      const spray = screen.spray != null ? screen.spray : 16;
+      if (spray) {
+        const tint = screen.sprayColor || (STYLES[o.style || r.style || this.opts.style] || STYLES.noir).plates.slice(-1)[0].fill;
+        const rad = deg * Math.PI / 180;
+        for (let i = 0; i < spray; i++) {
+          const along = rnd();                       // where on the cut it starts
+          const side = rnd() < 0.5 ? -1 : 1;         // which way it flies
+          const push = (0.05 + rnd() * 0.14) * Math.min(W, H);
+          const drift = (rnd() - 0.5) * 0.10 * W;
+          const size = 2 + Math.round(rnd() * 4);
+          const x = along * W, y = (0.5 + tilt * 0.5 - along * tilt) * H;
+          const speck = el('div', {
+            position: 'absolute', left: x + 'px', top: y + 'px',
+            width: size + 'px', height: size + 'px', borderRadius: '50%',
+            background: tint,
+            animation: 'omSpeck ' + Math.round(open * 0.9) + 'ms cubic-bezier(.2,.7,.4,1) ' + at + 'ms both'
+          });
+          // perpendicular to the cut, plus a little travel along it
+          speck.style.setProperty('--dx', (Math.sin(rad) * side * push + Math.cos(rad) * drift).toFixed(1) + 'px');
+          speck.style.setProperty('--dy', (-Math.cos(rad) * side * push + Math.sin(rad) * drift + push * 0.35).toFixed(1) + 'px');
+          sheet.appendChild(speck);
+        }
+      }
 
       this.layer.insertBefore(sheet, this.layer.firstChild);
       this.timers.push(setTimeout(function () { sheet.remove(); }, p.life));
